@@ -1,0 +1,695 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model auditoria_alteracao {
+  aud_id                 BigInt                           @id @default(autoincrement()) @db.UnsignedBigInt
+  aud_entidade           String                           @db.VarChar(100)
+  aud_registro_id        String                           @db.VarChar(100)
+  aud_operacao           auditoria_alteracao_aud_operacao
+  aud_valores_anteriores Json?
+  aud_valores_novos      Json
+  aud_motivo             String?                          @db.VarChar(255)
+  aud_origem             auditoria_alteracao_aud_origem   @default(USUARIO)
+  usu_id                 Int?                             @db.UnsignedInt
+  aud_data_hora          DateTime                         @default(now()) @db.DateTime(6)
+  usuario                usuario?                         @relation(fields: [usu_id], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_aud_usuario")
+
+  @@index([aud_data_hora], map: "idx_aud_data")
+  @@index([aud_entidade, aud_registro_id, aud_data_hora], map: "idx_aud_entidade_registro")
+  @@index([usu_id, aud_data_hora], map: "idx_aud_usuario_data")
+}
+
+model categoria_agenda {
+  cta_id                   Int                        @id @default(autoincrement()) @db.UnsignedInt
+  cta_descricao            String                     @unique(map: "cta_descricao") @db.VarChar(100)
+  created_at               DateTime?                  @default(now()) @db.Timestamp(0)
+  updated_at               DateTime?                  @default(now()) @db.Timestamp(0)
+  cronograma_padrao_manejo cronograma_padrao_manejo[]
+  tarefa_lote              tarefa_lote[]
+}
+
+model categoria_fornecedor {
+  ctf_id        Int          @id @default(autoincrement()) @db.UnsignedInt
+  ctf_descricao String       @unique(map: "ctf_descricao") @db.VarChar(100)
+  created_at    DateTime?    @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?    @default(now()) @db.Timestamp(0)
+  fornecedor    fornecedor[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model categoria_insumo {
+  cti_id        Int                       @id @default(autoincrement()) @db.UnsignedInt
+  cti_descricao String                    @unique(map: "cti_descricao") @db.VarChar(100)
+  cti_tipo      categoria_insumo_cti_tipo
+  created_at    DateTime?                 @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?                 @default(now()) @db.Timestamp(0)
+  insumo        insumo[]
+}
+
+model cronograma_padrao_insumo {
+  cpi_id                   Int                      @id @default(autoincrement()) @db.UnsignedInt
+  cpm_id                   Int                      @db.UnsignedInt
+  ins_id                   Int                      @db.UnsignedInt
+  created_at               DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at               DateTime?                @default(now()) @db.Timestamp(0)
+  cronograma_padrao_manejo cronograma_padrao_manejo @relation(fields: [cpm_id], references: [cpm_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cpi_cronograma")
+  insumo                   insumo                   @relation(fields: [ins_id], references: [ins_id], onUpdate: NoAction, map: "fk_cpi_insumo")
+
+  @@unique([cpm_id, ins_id], map: "uq_cronograma_padrao_insumo")
+  @@index([ins_id], map: "fk_cpi_insumo")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cronograma_padrao_manejo {
+  cpm_id                   Int                        @id @default(autoincrement()) @db.UnsignedInt
+  cpm_dia_execucao         Int
+  cpm_descricao_tarefa     String                     @db.VarChar(255)
+  lin_id                   Int                        @db.UnsignedInt
+  cta_id                   Int                        @db.UnsignedInt
+  created_at               DateTime?                  @default(now()) @db.Timestamp(0)
+  updated_at               DateTime?                  @default(now()) @db.Timestamp(0)
+  cronograma_padrao_insumo cronograma_padrao_insumo[]
+  categoria_agenda         categoria_agenda           @relation(fields: [cta_id], references: [cta_id], onUpdate: NoAction, map: "fk_cpm_categoria")
+  linhagem                 linhagem                   @relation(fields: [lin_id], references: [lin_id], onUpdate: NoAction, map: "fk_cpm_linhagem")
+  tarefa_lote              tarefa_lote[]
+
+  @@index([cta_id], map: "fk_cpm_categoria")
+  @@index([lin_id], map: "fk_cpm_linhagem")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model despesa_operacional {
+  dpo_id                                                 Int                                     @id @default(autoincrement()) @db.UnsignedInt
+  dpo_categoria                                          String                                  @db.VarChar(100)
+  dpo_natureza                                           despesa_operacional_dpo_natureza        @default(OPERACIONAL)
+  dpo_descricao                                          String                                  @db.VarChar(255)
+  dpo_valor                                              Decimal                                 @db.Decimal(10, 2)
+  dpo_data                                               DateTime                                @db.Date
+  lta_id                                                 Int?                                    @db.UnsignedInt
+  usu_id                                                 Int                                     @db.UnsignedInt
+  for_id                                                 Int?                                    @db.UnsignedInt
+  dpo_status_registro                                    despesa_operacional_dpo_status_registro @default(ATIVO)
+  dpo_estornado_em                                       DateTime?                               @db.DateTime(0)
+  dpo_estornado_por                                      Int?                                    @db.UnsignedInt
+  dpo_motivo_estorno                                     String?                                 @db.VarChar(255)
+  dpo_correcao_de_id                                     Int?                                    @db.UnsignedInt
+  created_at                                             DateTime                                @default(now()) @db.Timestamp(0)
+  updated_at                                             DateTime                                @default(now()) @db.Timestamp(0)
+  despesa_operacional                                    despesa_operacional?                    @relation("despesa_operacionalTodespesa_operacional", fields: [dpo_correcao_de_id], references: [dpo_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_dpo_correcao")
+  other_despesa_operacional                              despesa_operacional[]                   @relation("despesa_operacionalTodespesa_operacional")
+  fornecedor                                             fornecedor?                             @relation(fields: [for_id], references: [for_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_dpo_fornecedor")
+  lote_aves                                              lote_aves?                              @relation(fields: [lta_id], references: [lta_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_dpo_lote")
+  usuario_despesa_operacional_usu_idTousuario            usuario                                 @relation("despesa_operacional_usu_idTousuario", fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_dpo_usuario")
+  usuario_despesa_operacional_dpo_estornado_porTousuario usuario?                                @relation("despesa_operacional_dpo_estornado_porTousuario", fields: [dpo_estornado_por], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_dpo_usuario_estorno")
+
+  @@index([dpo_correcao_de_id], map: "fk_dpo_correcao")
+  @@index([for_id], map: "fk_dpo_fornecedor")
+  @@index([usu_id], map: "fk_dpo_usuario")
+  @@index([dpo_estornado_por], map: "fk_dpo_usuario_estorno")
+  @@index([lta_id, dpo_status_registro], map: "idx_dpo_lote_status")
+  @@index([dpo_natureza, dpo_data], map: "idx_dpo_natureza_data")
+  @@index([dpo_status_registro, dpo_data], map: "idx_dpo_status_data")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model fornecedor {
+  for_id                  Int                   @id @default(autoincrement()) @db.UnsignedInt
+  for_razao_social        String                @db.VarChar(200)
+  for_nome_fantasia       String?               @db.VarChar(200)
+  for_cnpj                String                @unique(map: "for_cnpj") @db.Char(18)
+  for_email               String                @unique(map: "for_email") @db.VarChar(150)
+  for_telefone_principal  String                @db.VarChar(20)
+  for_telefone_secundario String?               @db.VarChar(20)
+  for_cep                 String?               @db.VarChar(10)
+  for_logradouro          String?               @db.VarChar(200)
+  for_numero              String?               @db.VarChar(20)
+  for_bairro              String?               @db.VarChar(100)
+  for_cidade              String?               @db.VarChar(100)
+  for_estado              String?               @db.Char(2)
+  for_status              fornecedor_for_status @default(ATIVO)
+  ctf_id                  Int                   @db.UnsignedInt
+  created_at              DateTime              @default(now()) @db.Timestamp(0)
+  updated_at              DateTime              @default(now()) @db.Timestamp(0)
+  despesa_operacional     despesa_operacional[]
+  categoria_fornecedor    categoria_fornecedor  @relation(fields: [ctf_id], references: [ctf_id], onUpdate: NoAction, map: "fk_fornecedor_categoria")
+  lote_aves               lote_aves[]
+  lote_estoque_insumo     lote_estoque_insumo[]
+
+  @@index([ctf_id], map: "fk_fornecedor_categoria")
+  @@index([for_status], map: "idx_fornecedor_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model galpao {
+  gal_id      Int                @id @default(autoincrement()) @db.UnsignedInt
+  gal_nome    String             @unique(map: "gal_nome") @db.VarChar(100)
+  gal_area_m2 Decimal            @db.Decimal(6, 2)
+  gal_status  galpao_gal_status? @default(ATIVO)
+  created_at  DateTime?          @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?          @default(now()) @db.Timestamp(0)
+  lote_aves   lote_aves[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model insumo {
+  ins_id                   Int                        @id @default(autoincrement()) @db.UnsignedInt
+  ins_nome                 String                     @unique(map: "ins_nome") @db.VarChar(100)
+  ins_composicao           String?                    @db.VarChar(255)
+  ins_fase_aplicacao       insumo_ins_fase_aplicacao
+  ins_unidade_medida       insumo_ins_unidade_medida
+  ins_ponto_ressuprimento  Decimal                    @default(0.000) @db.Decimal(12, 3)
+  ins_dias_carencia        Int                        @default(0)
+  ins_status               insumo_ins_status          @default(ATIVO)
+  cti_id                   Int                        @db.UnsignedInt
+  created_at               DateTime                   @default(now()) @db.Timestamp(0)
+  updated_at               DateTime                   @default(now()) @db.Timestamp(0)
+  cronograma_padrao_insumo cronograma_padrao_insumo[]
+  categoria_insumo         categoria_insumo           @relation(fields: [cti_id], references: [cti_id], onUpdate: NoAction, map: "fk_insumo_categoria")
+  lote_estoque_insumo      lote_estoque_insumo[]
+  tarefa_lote_insumo       tarefa_lote_insumo[]
+
+  @@index([cti_id], map: "fk_insumo_categoria")
+  @@index([ins_status], map: "idx_insumo_status")
+}
+
+model linhagem {
+  lin_id                   Int                        @id @default(autoincrement()) @db.UnsignedInt
+  lin_nome                 String                     @unique(map: "lin_nome") @db.VarChar(100)
+  lin_descricao            String?                    @db.VarChar(255)
+  lin_status               linhagem_lin_status?       @default(ATIVO)
+  tov_id                   Int                        @db.UnsignedInt
+  created_at               DateTime?                  @default(now()) @db.Timestamp(0)
+  updated_at               DateTime?                  @default(now()) @db.Timestamp(0)
+  cronograma_padrao_manejo cronograma_padrao_manejo[]
+  tipo_ovo                 tipo_ovo                   @relation(fields: [tov_id], references: [tov_id], onUpdate: NoAction, map: "fk_linhagem_tipo_ovo")
+  lote_aves                lote_aves[]
+  meta_linhagem_semanal    meta_linhagem_semanal[]
+
+  @@index([tov_id], map: "fk_linhagem_tipo_ovo")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model lote_aves {
+  lta_id                  Int                       @id @default(autoincrement()) @db.UnsignedInt
+  lta_codigo_qr_code      String                    @unique(map: "lta_codigo_qr_code") @db.VarChar(255)
+  lta_quant_inicial       Int
+  lta_data_alojamento     DateTime                  @db.Date
+  lta_idade_inicial       Int                       @default(1)
+  lta_fase                lote_aves_lta_fase        @default(CRIA)
+  lta_status              lote_aves_lta_status      @default(ATIVO)
+  lta_data_encerramento   DateTime?                 @db.Date
+  lta_motivo_encerramento String?                   @db.VarChar(255)
+  lta_destino_descarte    String?                   @db.VarChar(255)
+  lta_data_liberacao_ovos DateTime?                 @db.Date
+  lin_id                  Int                       @db.UnsignedInt
+  gal_id                  Int                       @db.UnsignedInt
+  for_id                  Int                       @db.UnsignedInt
+  usu_id                  Int                       @db.UnsignedInt
+  created_at              DateTime                  @default(now()) @db.Timestamp(0)
+  updated_at              DateTime                  @default(now()) @db.Timestamp(0)
+  despesa_operacional     despesa_operacional[]
+  fornecedor              fornecedor                @relation(fields: [for_id], references: [for_id], onUpdate: NoAction, map: "fk_lote_fornecedor")
+  galpao                  galpao                    @relation(fields: [gal_id], references: [gal_id], onUpdate: NoAction, map: "fk_lote_galpao")
+  linhagem                linhagem                  @relation(fields: [lin_id], references: [lin_id], onUpdate: NoAction, map: "fk_lote_linhagem")
+  usuario                 usuario                   @relation(fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_lote_usuario")
+  lote_estoque_ovo        lote_estoque_ovo[]
+  monitoramento_ambiencia monitoramento_ambiencia[]
+  monitoramento_semanal   monitoramento_semanal[]
+  mortalidade_descarte    mortalidade_descarte[]
+  movimento_insumo        movimento_insumo[]
+  ocorrencia_saude        ocorrencia_saude[]
+  receita_venda           receita_venda[]
+  tarefa_lote             tarefa_lote[]
+
+  @@index([for_id], map: "fk_lote_fornecedor")
+  @@index([gal_id], map: "fk_lote_galpao")
+  @@index([lin_id], map: "fk_lote_linhagem")
+  @@index([usu_id], map: "fk_lote_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model lote_estoque_insumo {
+  lei_id              Int                @id @default(autoincrement()) @db.UnsignedInt
+  lei_lote_fabricante String?            @db.VarChar(100)
+  lei_data_validade   DateTime?          @db.Date
+  lei_data_entrada    DateTime           @db.Date
+  ins_id              Int                @db.UnsignedInt
+  for_id              Int                @db.UnsignedInt
+  created_at          DateTime           @default(now()) @db.Timestamp(0)
+  updated_at          DateTime           @default(now()) @db.Timestamp(0)
+  fornecedor          fornecedor         @relation(fields: [for_id], references: [for_id], onUpdate: NoAction, map: "fk_lei_fornecedor")
+  insumo              insumo             @relation(fields: [ins_id], references: [ins_id], onUpdate: NoAction, map: "fk_lei_insumo")
+  movimento_insumo    movimento_insumo[]
+
+  @@index([for_id], map: "fk_lei_fornecedor")
+  @@index([ins_id], map: "fk_lei_insumo")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model lote_estoque_ovo {
+  leo_id            Int             @id @default(autoincrement()) @db.UnsignedInt
+  leo_data_coleta   DateTime        @db.Date
+  leo_data_validade DateTime        @db.Date
+  lta_id            Int             @db.UnsignedInt
+  created_at        DateTime        @default(now()) @db.Timestamp(0)
+  updated_at        DateTime        @default(now()) @db.Timestamp(0)
+  lote_aves         lote_aves       @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_leo_lote_aves")
+  movimento_ovo     movimento_ovo[]
+
+  @@unique([lta_id, leo_data_coleta, leo_data_validade], map: "uq_lote_estoque_ovo")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model meta_linhagem_semanal {
+  mls_id                            Int      @id @default(autoincrement()) @db.UnsignedInt
+  mls_semana                        Int
+  mls_peso_meta_gramas              Decimal? @db.Decimal(10, 2)
+  mls_consumo_meta_gramas           Decimal? @db.Decimal(10, 2)
+  mls_produtividade_meta_percentual Decimal? @db.Decimal(5, 2)
+  mls_temperatura_ideal             Decimal? @db.Decimal(5, 2)
+  mls_horas_luz_dia                 Decimal? @db.Decimal(4, 2)
+  lin_id                            Int      @db.UnsignedInt
+  created_at                        DateTime @default(now()) @db.Timestamp(0)
+  updated_at                        DateTime @default(now()) @db.Timestamp(0)
+  linhagem                          linhagem @relation(fields: [lin_id], references: [lin_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mls_linhagem")
+
+  @@unique([lin_id, mls_semana], map: "uq_meta_linhagem_semana")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model monitoramento_ambiencia {
+  mna_id                 Int       @id @default(autoincrement()) @db.UnsignedInt
+  mna_data               DateTime  @db.Date
+  mna_hora               DateTime  @db.Time(0)
+  mna_temperatura_medida Decimal   @db.Decimal(5, 2)
+  mna_horas_luz_reais    Decimal   @db.Decimal(5, 2)
+  lta_id                 Int       @db.UnsignedInt
+  usu_id                 Int       @db.UnsignedInt
+  created_at             DateTime  @default(now()) @db.Timestamp(0)
+  updated_at             DateTime  @default(now()) @db.Timestamp(0)
+  lote_aves              lote_aves @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_mna_lote")
+  usuario                usuario   @relation(fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_mna_usuario")
+
+  @@index([lta_id], map: "fk_mna_lote")
+  @@index([usu_id], map: "fk_mna_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model monitoramento_semanal {
+  mns_id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  mns_semana          Int
+  mns_data_registro   DateTime  @db.Date
+  mns_peso_medio_real Decimal   @db.Decimal(10, 3)
+  lta_id              Int       @db.UnsignedInt
+  usu_id              Int       @db.UnsignedInt
+  created_at          DateTime  @default(now()) @db.Timestamp(0)
+  updated_at          DateTime  @default(now()) @db.Timestamp(0)
+  lote_aves           lote_aves @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_mns_lote")
+  usuario             usuario   @relation(fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_mns_usuario")
+
+  @@unique([lta_id, mns_semana], map: "uq_monitoramento_lote_semana")
+  @@index([usu_id], map: "fk_mns_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mortalidade_descarte {
+  mor_id                                                  Int                                      @id @default(autoincrement()) @db.UnsignedInt
+  mor_data                                                DateTime                                 @db.Date
+  mor_tipo                                                mortalidade_descarte_mor_tipo
+  mor_quantidade                                          Int
+  mor_motivo                                              String                                   @db.VarChar(255)
+  lta_id                                                  Int                                      @db.UnsignedInt
+  usu_id                                                  Int                                      @db.UnsignedInt
+  mor_status_registro                                     mortalidade_descarte_mor_status_registro @default(ATIVO)
+  mor_estornado_em                                        DateTime?                                @db.DateTime(0)
+  mor_estornado_por                                       Int?                                     @db.UnsignedInt
+  mor_motivo_estorno                                      String?                                  @db.VarChar(255)
+  mor_correcao_de_id                                      Int?                                     @db.UnsignedInt
+  created_at                                              DateTime                                 @default(now()) @db.Timestamp(0)
+  updated_at                                              DateTime                                 @default(now()) @db.Timestamp(0)
+  mortalidade_descarte                                    mortalidade_descarte?                    @relation("mortalidade_descarteTomortalidade_descarte", fields: [mor_correcao_de_id], references: [mor_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mor_correcao")
+  other_mortalidade_descarte                              mortalidade_descarte[]                   @relation("mortalidade_descarteTomortalidade_descarte")
+  lote_aves                                               lote_aves                                @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_mor_lote")
+  usuario_mortalidade_descarte_usu_idTousuario            usuario                                  @relation("mortalidade_descarte_usu_idTousuario", fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_mor_usuario")
+  usuario_mortalidade_descarte_mor_estornado_porTousuario usuario?                                 @relation("mortalidade_descarte_mor_estornado_porTousuario", fields: [mor_estornado_por], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mor_usuario_estorno")
+
+  @@index([mor_correcao_de_id], map: "fk_mor_correcao")
+  @@index([usu_id], map: "fk_mor_usuario")
+  @@index([mor_estornado_por], map: "fk_mor_usuario_estorno")
+  @@index([lta_id, mor_status_registro, mor_tipo], map: "idx_mor_lote_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model movimento_insumo {
+  mvi_id                                              Int                                    @id @default(autoincrement()) @db.UnsignedInt
+  mvi_data_movimentacao                               DateTime                               @db.Date
+  mvi_tipo_movimentacao                               movimento_insumo_mvi_tipo_movimentacao
+  mvi_motivo_saida                                    movimento_insumo_mvi_motivo_saida?
+  mvi_quantidade                                      Decimal                                @db.Decimal(12, 3)
+  mvi_valor_unitario                                  Decimal                                @db.Decimal(12, 4)
+  lei_id                                              Int                                    @db.UnsignedInt
+  lta_id                                              Int?                                   @db.UnsignedInt
+  tal_id                                              Int?                                   @db.UnsignedInt
+  usu_id                                              Int                                    @db.UnsignedInt
+  mvi_status_registro                                 movimento_insumo_mvi_status_registro   @default(ATIVO)
+  mvi_estornado_em                                    DateTime?                              @db.DateTime(0)
+  mvi_estornado_por                                   Int?                                   @db.UnsignedInt
+  mvi_motivo_estorno                                  String?                                @db.VarChar(255)
+  mvi_correcao_de_id                                  Int?                                   @db.UnsignedInt
+  created_at                                          DateTime                               @default(now()) @db.Timestamp(0)
+  updated_at                                          DateTime                               @default(now()) @db.Timestamp(0)
+  movimento_insumo                                    movimento_insumo?                      @relation("movimento_insumoTomovimento_insumo", fields: [mvi_correcao_de_id], references: [mvi_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mvi_correcao")
+  other_movimento_insumo                              movimento_insumo[]                     @relation("movimento_insumoTomovimento_insumo")
+  lote_aves                                           lote_aves?                             @relation(fields: [lta_id], references: [lta_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mvi_lote_aves")
+  lote_estoque_insumo                                 lote_estoque_insumo                    @relation(fields: [lei_id], references: [lei_id], onUpdate: NoAction, map: "fk_mvi_lote_estoque")
+  tarefa_lote                                         tarefa_lote?                           @relation(fields: [tal_id], references: [tal_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mvi_tarefa")
+  usuario_movimento_insumo_usu_idTousuario            usuario                                @relation("movimento_insumo_usu_idTousuario", fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_mvi_usuario")
+  usuario_movimento_insumo_mvi_estornado_porTousuario usuario?                               @relation("movimento_insumo_mvi_estornado_porTousuario", fields: [mvi_estornado_por], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mvi_usuario_estorno")
+
+  @@index([mvi_correcao_de_id], map: "fk_mvi_correcao")
+  @@index([tal_id], map: "fk_mvi_tarefa")
+  @@index([usu_id], map: "fk_mvi_usuario")
+  @@index([mvi_estornado_por], map: "fk_mvi_usuario_estorno")
+  @@index([lei_id, mvi_status_registro, mvi_tipo_movimentacao], map: "idx_mvi_estoque_status")
+  @@index([lta_id, mvi_status_registro, mvi_tipo_movimentacao], map: "idx_mvi_lote_status")
+  @@index([mvi_motivo_saida, mvi_status_registro], map: "idx_mvi_motivo_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model movimento_ovo {
+  mvo_id                                           Int                               @id @default(autoincrement()) @db.UnsignedInt
+  mvo_data_movimento                               DateTime                          @db.Date
+  mvo_tipo_movimento                               movimento_ovo_mvo_tipo_movimento
+  mvo_quantidade                                   Int
+  mvo_observacao                                   String?                           @db.Text
+  leo_id                                           Int                               @db.UnsignedInt
+  rcv_id                                           Int?                              @db.UnsignedInt
+  usu_id                                           Int                               @db.UnsignedInt
+  mvo_status_registro                              movimento_ovo_mvo_status_registro @default(ATIVO)
+  mvo_estornado_em                                 DateTime?                         @db.DateTime(0)
+  mvo_estornado_por                                Int?                              @db.UnsignedInt
+  mvo_motivo_estorno                               String?                           @db.VarChar(255)
+  mvo_correcao_de_id                               Int?                              @db.UnsignedInt
+  created_at                                       DateTime                          @default(now()) @db.Timestamp(0)
+  updated_at                                       DateTime                          @default(now()) @db.Timestamp(0)
+  movimento_ovo                                    movimento_ovo?                    @relation("movimento_ovoTomovimento_ovo", fields: [mvo_correcao_de_id], references: [mvo_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mvo_correcao")
+  other_movimento_ovo                              movimento_ovo[]                   @relation("movimento_ovoTomovimento_ovo")
+  lote_estoque_ovo                                 lote_estoque_ovo                  @relation(fields: [leo_id], references: [leo_id], onUpdate: NoAction, map: "fk_mvo_lote_estoque_ovo")
+  receita_venda                                    receita_venda?                    @relation(fields: [rcv_id], references: [rcv_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mvo_receita")
+  usuario_movimento_ovo_usu_idTousuario            usuario                           @relation("movimento_ovo_usu_idTousuario", fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_mvo_usuario")
+  usuario_movimento_ovo_mvo_estornado_porTousuario usuario?                          @relation("movimento_ovo_mvo_estornado_porTousuario", fields: [mvo_estornado_por], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mvo_usuario_estorno")
+
+  @@index([mvo_correcao_de_id], map: "fk_mvo_correcao")
+  @@index([usu_id], map: "fk_mvo_usuario")
+  @@index([mvo_estornado_por], map: "fk_mvo_usuario_estorno")
+  @@index([leo_id, mvo_status_registro, mvo_tipo_movimento], map: "idx_mvo_estoque_status")
+  @@index([rcv_id], map: "idx_mvo_receita")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ocorrencia_saude {
+  oco_id                  Int       @id @default(autoincrement()) @db.UnsignedInt
+  oco_data                DateTime  @db.Date
+  oco_hora                DateTime? @db.Time(0)
+  oco_descricao           String    @db.VarChar(255)
+  oco_sintomas_observados String?   @db.Text
+  oco_num_aves_afetadas   Int?
+  lta_id                  Int       @db.UnsignedInt
+  usu_id                  Int       @db.UnsignedInt
+  created_at              DateTime? @default(now()) @db.Timestamp(0)
+  updated_at              DateTime? @default(now()) @db.Timestamp(0)
+  lote_aves               lote_aves @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_oco_lote")
+  usuario                 usuario   @relation(fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_oco_usuario")
+
+  @@index([lta_id], map: "fk_oco_lote")
+  @@index([usu_id], map: "fk_oco_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model receita_venda {
+  rcv_id                                           Int                               @id @default(autoincrement()) @db.UnsignedInt
+  rcv_categoria                                    receita_venda_rcv_categoria
+  rcv_descricao                                    String                            @db.VarChar(255)
+  rcv_valor_total                                  Decimal                           @db.Decimal(10, 2)
+  rcv_data                                         DateTime                          @db.Date
+  lta_id                                           Int?                              @db.UnsignedInt
+  usu_id                                           Int                               @db.UnsignedInt
+  rcv_status_registro                              receita_venda_rcv_status_registro @default(ATIVO)
+  rcv_estornado_em                                 DateTime?                         @db.DateTime(0)
+  rcv_estornado_por                                Int?                              @db.UnsignedInt
+  rcv_motivo_estorno                               String?                           @db.VarChar(255)
+  rcv_correcao_de_id                               Int?                              @db.UnsignedInt
+  created_at                                       DateTime                          @default(now()) @db.Timestamp(0)
+  updated_at                                       DateTime                          @default(now()) @db.Timestamp(0)
+  movimento_ovo                                    movimento_ovo[]
+  receita_venda                                    receita_venda?                    @relation("receita_vendaToreceita_venda", fields: [rcv_correcao_de_id], references: [rcv_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_rcv_correcao")
+  other_receita_venda                              receita_venda[]                   @relation("receita_vendaToreceita_venda")
+  lote_aves                                        lote_aves?                        @relation(fields: [lta_id], references: [lta_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_rcv_lote")
+  usuario_receita_venda_usu_idTousuario            usuario                           @relation("receita_venda_usu_idTousuario", fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_rcv_usuario")
+  usuario_receita_venda_rcv_estornado_porTousuario usuario?                          @relation("receita_venda_rcv_estornado_porTousuario", fields: [rcv_estornado_por], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_rcv_usuario_estorno")
+
+  @@index([rcv_correcao_de_id], map: "fk_rcv_correcao")
+  @@index([lta_id], map: "fk_rcv_lote")
+  @@index([usu_id], map: "fk_rcv_usuario")
+  @@index([rcv_estornado_por], map: "fk_rcv_usuario_estorno")
+  @@index([rcv_categoria, rcv_data], map: "idx_rcv_categoria_data")
+  @@index([rcv_status_registro, rcv_data], map: "idx_rcv_status_data")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tarefa_lote {
+  tal_id                   Int                       @id @default(autoincrement()) @db.UnsignedInt
+  tal_status               tarefa_lote_tal_status    @default(PENDENTE)
+  tal_data_prevista        DateTime                  @db.Date
+  tal_data_realizacao      DateTime?                 @db.Date
+  tal_observacao           String?                   @db.Text
+  tal_tarefa               String                    @db.VarChar(255)
+  cpm_id                   Int?                      @db.UnsignedInt
+  cta_id                   Int                       @db.UnsignedInt
+  lta_id                   Int                       @db.UnsignedInt
+  usu_id                   Int?                      @db.UnsignedInt
+  created_at               DateTime                  @default(now()) @db.Timestamp(0)
+  updated_at               DateTime                  @default(now()) @db.Timestamp(0)
+  movimento_insumo         movimento_insumo[]
+  categoria_agenda         categoria_agenda          @relation(fields: [cta_id], references: [cta_id], onUpdate: NoAction, map: "fk_tal_categoria")
+  cronograma_padrao_manejo cronograma_padrao_manejo? @relation(fields: [cpm_id], references: [cpm_id], onUpdate: NoAction, map: "fk_tal_cronograma")
+  lote_aves                lote_aves                 @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_tal_lote")
+  usuario                  usuario?                  @relation(fields: [usu_id], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_tal_usuario")
+  tarefa_lote_insumo       tarefa_lote_insumo[]
+
+  @@unique([lta_id, cpm_id, tal_data_prevista], map: "uq_tarefa_lote_cronograma")
+  @@index([cta_id], map: "fk_tal_categoria")
+  @@index([cpm_id], map: "fk_tal_cronograma")
+  @@index([usu_id], map: "fk_tal_usuario")
+  @@index([lta_id, tal_status], map: "idx_tarefa_lote_status")
+  @@index([tal_status, tal_data_prevista], map: "idx_tarefa_status_data")
+}
+
+model tarefa_lote_insumo {
+  tli_id      Int         @id @default(autoincrement()) @db.UnsignedInt
+  tal_id      Int         @db.UnsignedInt
+  ins_id      Int         @db.UnsignedInt
+  created_at  DateTime?   @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?   @default(now()) @db.Timestamp(0)
+  insumo      insumo      @relation(fields: [ins_id], references: [ins_id], onUpdate: NoAction, map: "fk_tli_insumo")
+  tarefa_lote tarefa_lote @relation(fields: [tal_id], references: [tal_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tli_tarefa")
+
+  @@unique([tal_id, ins_id], map: "uq_tarefa_lote_insumo")
+  @@index([ins_id], map: "fk_tli_insumo")
+}
+
+model tipo_ovo {
+  tov_id        Int        @id @default(autoincrement()) @db.UnsignedInt
+  tov_nome      String     @unique(map: "tov_nome") @db.VarChar(50)
+  tov_descricao String?    @db.VarChar(255)
+  created_at    DateTime?  @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?  @default(now()) @db.Timestamp(0)
+  linhagem      linhagem[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model usuario {
+  usu_id                                                               Int                       @id @default(autoincrement()) @db.UnsignedInt
+  usu_nome                                                             String                    @db.VarChar(100)
+  usu_perfil_acesso                                                    usuario_usu_perfil_acesso
+  usu_senha                                                            String                    @db.VarChar(255)
+  usu_status                                                           usuario_usu_status?       @default(ATIVO)
+  usu_email                                                            String                    @unique(map: "usu_email") @db.VarChar(150)
+  created_at                                                           DateTime?                 @default(now()) @db.Timestamp(0)
+  updated_at                                                           DateTime?                 @default(now()) @db.Timestamp(0)
+  auditoria_alteracao                                                  auditoria_alteracao[]
+  despesa_operacional_despesa_operacional_usu_idTousuario              despesa_operacional[]     @relation("despesa_operacional_usu_idTousuario")
+  despesa_operacional_despesa_operacional_dpo_estornado_porTousuario   despesa_operacional[]     @relation("despesa_operacional_dpo_estornado_porTousuario")
+  lote_aves                                                            lote_aves[]
+  monitoramento_ambiencia                                              monitoramento_ambiencia[]
+  monitoramento_semanal                                                monitoramento_semanal[]
+  mortalidade_descarte_mortalidade_descarte_usu_idTousuario            mortalidade_descarte[]    @relation("mortalidade_descarte_usu_idTousuario")
+  mortalidade_descarte_mortalidade_descarte_mor_estornado_porTousuario mortalidade_descarte[]    @relation("mortalidade_descarte_mor_estornado_porTousuario")
+  movimento_insumo_movimento_insumo_usu_idTousuario                    movimento_insumo[]        @relation("movimento_insumo_usu_idTousuario")
+  movimento_insumo_movimento_insumo_mvi_estornado_porTousuario         movimento_insumo[]        @relation("movimento_insumo_mvi_estornado_porTousuario")
+  movimento_ovo_movimento_ovo_usu_idTousuario                          movimento_ovo[]           @relation("movimento_ovo_usu_idTousuario")
+  movimento_ovo_movimento_ovo_mvo_estornado_porTousuario               movimento_ovo[]           @relation("movimento_ovo_mvo_estornado_porTousuario")
+  ocorrencia_saude                                                     ocorrencia_saude[]
+  receita_venda_receita_venda_usu_idTousuario                          receita_venda[]           @relation("receita_venda_usu_idTousuario")
+  receita_venda_receita_venda_rcv_estornado_porTousuario               receita_venda[]           @relation("receita_venda_rcv_estornado_porTousuario")
+  tarefa_lote                                                          tarefa_lote[]
+}
+
+enum receita_venda_rcv_categoria {
+  VENDA_OVOS
+  VENDA_AVES_DESCARTE
+  ESTERCO
+  OUTROS
+}
+
+enum tarefa_lote_tal_status {
+  PENDENTE
+  CONCLUIDO
+  CANCELADO
+}
+
+enum categoria_insumo_cti_tipo {
+  RACAO
+  MEDICAMENTO
+  VACINA
+  EMBALAGEM
+  OUTROS
+}
+
+enum despesa_operacional_dpo_natureza {
+  OPERACIONAL
+  COMPRA_INSUMO
+}
+
+enum mortalidade_descarte_mor_tipo {
+  MORTALIDADE
+  DESCARTE
+}
+
+enum movimento_insumo_mvi_tipo_movimentacao {
+  ENTRADA
+  SAIDA
+}
+
+enum movimento_ovo_mvo_tipo_movimento {
+  COLETA
+  VENDA
+  PERDA
+  DESCARTE
+}
+
+enum usuario_usu_perfil_acesso {
+  ADMIN
+  OPERADOR
+}
+
+enum auditoria_alteracao_aud_operacao {
+  CRIACAO
+  ALTERACAO
+}
+
+enum galpao_gal_status {
+  ATIVO
+  VAZIO_SANITARIO
+  MANUTENCAO
+  DESATIVADO
+}
+
+enum insumo_ins_fase_aplicacao {
+  CRIA
+  RECRIA
+  PRE_POSTURA
+  POSTURA
+  VAZIO_SANITARIO
+  USO_GERAL
+}
+
+enum linhagem_lin_status {
+  ATIVO
+  INATIVO
+}
+
+enum movimento_insumo_mvi_motivo_saida {
+  CONSUMO_LOTE
+  VENDA
+  PERDA
+  DESCARTE
+  OUTROS
+}
+
+enum insumo_ins_unidade_medida {
+  KG
+  G
+  L
+  ML
+  UNIDADE
+  DOSE
+}
+
+enum usuario_usu_status {
+  ATIVO
+  INATIVO
+}
+
+enum lote_aves_lta_fase {
+  CRIA
+  RECRIA
+  PRE_POSTURA
+  POSTURA
+}
+
+enum lote_aves_lta_status {
+  ATIVO
+  FINALIZADO
+}
+
+enum auditoria_alteracao_aud_origem {
+  USUARIO
+  SISTEMA
+}
+
+enum insumo_ins_status {
+  ATIVO
+  INATIVO
+}
+
+enum mortalidade_descarte_mor_status_registro {
+  ATIVO
+  ESTORNADO
+}
+
+enum receita_venda_rcv_status_registro {
+  ATIVO
+  ESTORNADO
+}
+
+enum movimento_ovo_mvo_status_registro {
+  ATIVO
+  ESTORNADO
+}
+
+enum despesa_operacional_dpo_status_registro {
+  ATIVO
+  ESTORNADO
+}
+
+enum movimento_insumo_mvi_status_registro {
+  ATIVO
+  ESTORNADO
+}
+
+enum fornecedor_for_status {
+  ATIVO
+  INATIVO
+}
