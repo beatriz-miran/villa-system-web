@@ -12,10 +12,17 @@ import {
 } from "lucide-react";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useActionState, useState } from "react";
+
+import { autenticar } from "@/app/login/actions";
 
 export default function LoginDesktop() {
   const [showPassword, setShowPassword] = useState(false);
+
+  const [erro, formAction, pendente] = useActionState(
+    autenticar,
+    undefined
+  );
 
   return (
     <section className="relative min-h-screen overflow-hidden">
@@ -124,14 +131,16 @@ export default function LoginDesktop() {
               </p>
             </div>
 
-            <div className="space-y-4">
-              {/* Usuário */}
+            <form action={formAction} className="space-y-4">
+              <input type="hidden" name="redirectTo" value="/" />
+
+              {/* E-mail */}
               <div className="flex flex-col gap-2">
                 <label
-                  htmlFor="usuario"
+                  htmlFor="email"
                   className="text-[13px] font-bold text-gray-700"
                 >
-                  Usuário
+                  E-mail
                 </label>
 
                 <div className="relative">
@@ -141,9 +150,12 @@ export default function LoginDesktop() {
                   />
 
                   <input
-                    id="usuario"
-                    type="text"
-                    placeholder="Digite seu usuário"
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Digite seu e-mail"
+                    autoComplete="email"
+                    required
                     className="w-full rounded-md border border-gray-300 py-3 pl-10 pr-3 text-[15px] text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
                   />
                 </div>
@@ -152,7 +164,7 @@ export default function LoginDesktop() {
               {/* Senha */}
               <div className="flex flex-col gap-2">
                 <label
-                  htmlFor="senha"
+                  htmlFor="password"
                   className="text-[13px] font-bold text-gray-700"
                 >
                   Senha
@@ -165,9 +177,12 @@ export default function LoginDesktop() {
                   />
 
                   <input
-                    id="senha"
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Digite sua senha"
+                    autoComplete="current-password"
+                    required
                     className="w-full rounded-md border border-gray-300 py-3 pl-10 pr-10 text-[15px] text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
                   />
 
@@ -195,15 +210,27 @@ export default function LoginDesktop() {
                 </a>
               </div>
 
+              {/* Erro */}
+              {erro && (
+                <p
+                  role="alert"
+                  className="text-center text-[13px] font-medium text-red-600"
+                >
+                  {erro}
+                </p>
+              )}
+
               {/* Botão */}
               <button
                 type="submit"
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-[#1B3B32] px-4 py-3 text-[14px] font-medium text-white transition hover:bg-[#142d26]"
+                disabled={pendente}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-[#1B3B32] px-4 py-3 text-[14px] font-medium text-white transition hover:bg-[#142d26] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <LogIn size={18} />
-                Entrar
+
+                {pendente ? "Entrando..." : "Entrar"}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
