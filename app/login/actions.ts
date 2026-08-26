@@ -8,14 +8,13 @@ export async function autenticar(
   formData: FormData
 ) {
   try {
-    await signIn("credentials", formData, {
-      redirectTo: "/",
-    });
+    await signIn("credentials", formData);
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
           return "E-mail ou senha inválidos.";
+
         default:
           return "Não foi possível realizar o login.";
       }
