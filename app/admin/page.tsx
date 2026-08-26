@@ -1,7 +1,7 @@
 export default function AdminPage() {
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Visão Geral da Granja
@@ -14,7 +14,7 @@ export default function AdminPage() {
 
         <button
           type="button"
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-[#1B3B32] transition hover:bg-gray-50"
+          className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-[#1B3B32] transition hover:bg-gray-50 sm:w-auto"
         >
           Personalizar painel
         </button>

@@ -4,6 +4,8 @@ import { ReactNode } from "react";
 
 import { auth, signOut } from "@/auth";
 
+import AdminMobileHeader from "./components/AdminMobileHeader";
+
 export default async function AdminLayout({
   children,
 }: {
@@ -21,7 +23,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <aside className="fixed left-0 top-0 h-screen w-[250px] border-r border-gray-200 bg-white">
+      <aside className="fixed left-0 top-0 hidden h-screen w-[250px] border-r border-gray-200 bg-white lg:block">
         <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-4">
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1B3B32]">
             <Image
@@ -98,6 +100,7 @@ export default async function AdminLayout({
           <form
             action={async () => {
               "use server";
+
               await signOut({
                 redirectTo: "/login",
               });
@@ -113,9 +116,13 @@ export default async function AdminLayout({
         </div>
       </aside>
 
-      <main className="ml-[250px] min-h-screen">
-        {children}
-      </main>
+      <div className="lg:ml-[250px]">
+        <AdminMobileHeader />
+
+        <main className="min-h-screen">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
