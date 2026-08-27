@@ -203,13 +203,6 @@ export default function LoginDesktop() {
                     )}
                   </button>
                 </div>
-
-                <a
-                  href="#"
-                  className="self-end text-[12px] text-[#1B3B32] transition hover:underline"
-                >
-                  Esqueceu sua senha?
-                </a>
               </div>
 
               {/* Erro */}

@@ -97,10 +97,7 @@ export default async function OperadorPage() {
           </h2>
 
           <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <button
-              type="button"
-              className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-[#1B3B32]/30 hover:shadow-md"
-            >
+            <div className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F4B324]/15 text-[#B77C00]">
                 <Egg size={23} />
               </div>
@@ -114,12 +111,9 @@ export default async function OperadorPage() {
                   Registrar ovos
                 </p>
               </div>
-            </button>
+            </div>
 
-            <button
-              type="button"
-              className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-[#1B3B32]/30 hover:shadow-md"
-            >
+            <div className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
                 <Bird size={23} />
               </div>
@@ -133,12 +127,9 @@ export default async function OperadorPage() {
                   Registrar aves
                 </p>
               </div>
-            </button>
+            </div>
 
-            <button
-              type="button"
-              className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-[#1B3B32]/30 hover:shadow-md"
-            >
+            <div className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-700">
                 <AlertTriangle size={23} />
               </div>
@@ -152,12 +143,9 @@ export default async function OperadorPage() {
                   Registrar evento
                 </p>
               </div>
-            </button>
+            </div>
 
-            <button
-              type="button"
-              className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:border-[#1B3B32]/30 hover:shadow-md"
-            >
+            <div className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1B3B32]/10 text-[#1B3B32]">
                 <QrCode size={23} />
               </div>
@@ -171,7 +159,7 @@ export default async function OperadorPage() {
                   Acessar lote
                 </p>
               </div>
-            </button>
+            </div>
           </div>
         </section>
 
@@ -196,11 +184,7 @@ export default async function OperadorPage() {
 
             <div className="mt-4 rounded-lg bg-[#F8FAFC] px-4 py-5 text-center">
               <p className="text-sm font-medium text-gray-600">
-                As tarefas do dia aparecerão aqui.
-              </p>
-
-              <p className="mt-1 text-xs text-gray-400">
-                O painel será integrado aos dados da granja nas próximas etapas.
+                Nenhuma tarefa disponível no momento.
               </p>
             </div>
           </div>
