@@ -2,8 +2,9 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 
+import { sairDoSistema } from "./actions";
 import AdminMobileHeader from "./components/AdminMobileHeader";
 
 export default async function AdminLayout({
@@ -97,15 +98,7 @@ export default async function AdminLayout({
             </p>
           </div>
 
-          <form
-            action={async () => {
-              "use server";
-
-              await signOut({
-                redirectTo: "/login",
-              });
-            }}
-          >
+          <form action={sairDoSistema}>
             <button
               type="submit"
               className="w-full rounded-md border border-gray-200 px-3 py-2 text-left text-sm text-gray-600 transition hover:bg-gray-50 hover:text-[#1B3B32]"

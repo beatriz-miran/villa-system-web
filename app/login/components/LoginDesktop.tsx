@@ -25,7 +25,7 @@ export default function LoginDesktop() {
   );
 
   return (
-    <section className="relative min-h-screen overflow-hidden">
+    <section className="relative min-h-screen overflow-x-hidden">
       {/* Imagem de fundo */}
       <Image
         src="/imagens/b34908c95ef4ea109d869e43fbe8817f4c18a3d9.png"
@@ -35,32 +35,35 @@ export default function LoginDesktop() {
         className="object-cover"
       />
 
-      {/* Gradiente verde */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#1B3B32] from-0% via-[#1B3B32] via-40% to-transparent to-74%" />
+      {/* Fundo para celular e tablet */}
+      <div className="absolute inset-0 bg-[#1B3B32]/80 lg:hidden" />
 
-      {/* Conteúdo da tela */}
+      {/* Gradiente usado no desktop */}
+      <div className="absolute inset-0 hidden bg-gradient-to-r from-[#1B3B32] from-0% via-[#1B3B32] via-40% to-transparent to-74% lg:block" />
+
       <div className="relative z-10 min-h-screen">
         {/* Logo */}
-        <div className="absolute left-1/2 top-4 z-20 flex -translate-x-1/2 flex-col items-center text-white">
+        <div className="relative z-20 flex flex-col items-center pt-6 text-white lg:absolute lg:left-1/2 lg:top-4 lg:-translate-x-1/2 lg:pt-0">
           <Image
             src="/imagens/logo-villa-system.svg"
             alt="Logo Villa System"
-            width={130}
-            height={102}
+            width={100}
+            height={78}
             priority
+            className="lg:h-auto lg:w-[130px]"
           />
 
-          <h2 className="-mt-3 text-[36px] font-bold leading-none">
+          <h2 className="-mt-2 text-[28px] font-bold leading-none lg:-mt-3 lg:text-[36px]">
             Villa System
           </h2>
 
-          <p className="mt-2 text-[14px] text-white/90">
+          <p className="mt-2 text-center text-[13px] text-white/90 lg:text-[14px]">
             Gestão inteligente para a sua granja.
           </p>
         </div>
 
-        {/* Texto à esquerda */}
-        <div className="absolute left-[5%] top-1/2 w-[400px] -translate-y-[38%] text-white">
+        {/* Texto institucional - somente desktop */}
+        <div className="absolute left-[5%] top-1/2 hidden w-[400px] -translate-y-[38%] text-white lg:block">
           <h1 className="text-[44px] leading-[1.08] tracking-tight">
             Mais controle,
             <br />
@@ -77,7 +80,6 @@ export default function LoginDesktop() {
             avícolas.
           </p>
 
-          {/* Benefícios */}
           <div className="mt-8 space-y-5">
             <div className="flex items-center gap-5">
               <div className="flex w-10 shrink-0 justify-center">
@@ -118,11 +120,11 @@ export default function LoginDesktop() {
         </div>
 
         {/* Formulário */}
-        <div className="absolute left-1/2 top-1/2 w-[29%] min-w-[440px] max-w-[490px] -translate-x-1/2 -translate-y-[39%]">
-          <div className="w-full rounded-2xl bg-white px-8 py-9 shadow-2xl">
+        <div className="relative mx-auto mt-7 w-full max-w-[470px] px-4 pb-8 lg:absolute lg:left-1/2 lg:top-1/2 lg:mt-0 lg:w-[29%] lg:min-w-[440px] lg:max-w-[490px] lg:-translate-x-1/2 lg:-translate-y-[39%] lg:px-0 lg:pb-0">
+          <div className="w-full rounded-2xl bg-white px-5 py-7 shadow-2xl sm:px-8 sm:py-9">
             {/* Cabeçalho */}
             <div className="mb-6 text-center">
-              <h1 className="text-[23px] font-bold text-gray-900">
+              <h1 className="text-[22px] font-bold text-gray-900 sm:text-[23px]">
                 Acesse sua conta
               </h1>
 
