@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import { sairDoSistema } from "../actions";
+import AdminNavigation from "./AdminNavigation";
 
 export default function AdminMobileHeader() {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -70,49 +70,11 @@ export default function AdminMobileHeader() {
               </button>
             </div>
 
-            <nav className="flex-1 overflow-y-auto p-4">
-              <p className="mb-3 px-2 text-xs font-semibold uppercase text-gray-400">
-                Gestão
-              </p>
-
-              <div className="space-y-1 text-sm">
-                <Link
-                  href="/admin"
-                  onClick={() => setMenuAberto(false)}
-                  className="block rounded-md bg-[#1B3B32] px-3 py-2.5 font-medium text-white"
-                >
-                  Visão Geral
-                </Link>
-
-                <div className="rounded-md px-3 py-2.5 text-gray-500">
-                  Plantel & Lotes
-                </div>
-
-                <div className="rounded-md px-3 py-2.5 text-gray-500">
-                  Galpões
-                </div>
-
-                <div className="rounded-md px-3 py-2.5 text-gray-500">
-                  Produção de Ovos
-                </div>
-
-                <div className="rounded-md px-3 py-2.5 text-gray-500">
-                  Insumos & Estoque
-                </div>
-
-                <div className="rounded-md px-3 py-2.5 text-gray-500">
-                  Fornecedores
-                </div>
-
-                <div className="rounded-md px-3 py-2.5 text-gray-500">
-                  Financeiro
-                </div>
-
-                <div className="rounded-md px-3 py-2.5 text-gray-500">
-                  Relatórios
-                </div>
-              </div>
-            </nav>
+            <div className="flex-1 overflow-y-auto">
+              <AdminNavigation
+                onNavigate={() => setMenuAberto(false)}
+              />
+            </div>
 
             <div className="border-t border-gray-200 p-4">
               <form action={sairDoSistema}>

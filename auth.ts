@@ -11,7 +11,7 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
-export const { auth, signIn, signOut, handlers } = NextAuth({
+const nextAuth = NextAuth({
   ...authConfig,
 
   session: {
@@ -50,7 +50,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       },
 
       async authorize(credentials) {
-        const parsedCredentials = credentialsSchema.safeParse(credentials);
+        const parsedCredentials =
+          credentialsSchema.safeParse(credentials);
 
         if (!parsedCredentials.success) {
           return null;
@@ -60,7 +61,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
         const usuario = await prisma.usuario.findUnique({
           where: {
-            usu_email: email,
+            usu_email: email.toLowerCase(),
           },
         });
 
@@ -68,19 +69,71 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           return null;
         }
 
-        const senhaCorreta = await compare(password, usuario.usu_senha);
+        const senhaCorreta = await compare(
+          password,
+          usuario.usu_senha
+        );
 
         if (!senhaCorreta) {
           return null;
         }
 
         return {
-  	   id: String(usuario.usu_id),
-  	   name: usuario.usu_nome,
-  	   email: usuario.usu_email,
-  	   perfil: usuario.usu_perfil_acesso,
-	};
+          id: String(usuario.usu_id),
+          name: usuario.usu_nome,
+          email: usuario.usu_email,
+          perfil: usuario.usu_perfil_acesso,
+        };
       },
     }),
   ],
 });
+
+const authBase = nextAuth.auth;
+
+export const {
+  signIn,
+  signOut,
+  handlers,
+} = nextAuth;
+
+export async function auth() {
+  const session = await authBase();
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  const usuarioId = Number(session.user.id);
+
+  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+    return null;
+  }
+
+  const usuarioAtual = await prisma.usuario.findUnique({
+    where: {
+      usu_id: usuarioId,
+    },
+    select: {
+      usu_id: true,
+      usu_nome: true,
+      usu_email: true,
+      usu_perfil_acesso: true,
+      usu_status: true,
+    },
+  });
+
+  if (
+    !usuarioAtual ||
+    usuarioAtual.usu_status !== "ATIVO"
+  ) {
+    return null;
+  }
+
+  session.user.id = String(usuarioAtual.usu_id);
+  session.user.name = usuarioAtual.usu_nome;
+  session.user.email = usuarioAtual.usu_email;
+  session.user.perfil = usuarioAtual.usu_perfil_acesso;
+
+  return session;
+}

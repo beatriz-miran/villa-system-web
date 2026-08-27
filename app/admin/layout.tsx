@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 
 import { sairDoSistema } from "./actions";
 import AdminMobileHeader from "./components/AdminMobileHeader";
+import AdminNavigation from "./components/AdminNavigation";
 
 export default async function AdminLayout({
   children,
@@ -47,45 +48,7 @@ export default async function AdminLayout({
           </div>
         </div>
 
-        <nav className="px-4 py-5">
-          <p className="mb-3 px-2 text-xs font-semibold uppercase text-gray-400">
-            Gestão
-          </p>
-
-          <div className="space-y-1 text-sm">
-            <div className="rounded-md bg-[#1B3B32] px-3 py-2.5 font-medium text-white">
-              Visão Geral
-            </div>
-
-            <div className="rounded-md px-3 py-2.5 text-gray-600">
-              Plantel & Lotes
-            </div>
-
-            <div className="rounded-md px-3 py-2.5 text-gray-600">
-              Galpões
-            </div>
-
-            <div className="rounded-md px-3 py-2.5 text-gray-600">
-              Produção de Ovos
-            </div>
-
-            <div className="rounded-md px-3 py-2.5 text-gray-600">
-              Insumos & Estoque
-            </div>
-
-            <div className="rounded-md px-3 py-2.5 text-gray-600">
-              Fornecedores
-            </div>
-
-            <div className="rounded-md px-3 py-2.5 text-gray-600">
-              Financeiro
-            </div>
-
-            <div className="rounded-md px-3 py-2.5 text-gray-600">
-              Relatórios
-            </div>
-          </div>
-        </nav>
+        <AdminNavigation />
 
         <div className="absolute bottom-0 left-0 w-full border-t border-gray-200 p-4">
           <div className="mb-3">
