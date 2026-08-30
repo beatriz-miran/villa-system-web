@@ -1,36 +1,49 @@
-# villa-system-web
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🐔 Villa System - Sistema de gestão para granjas  avícolas
 
-## Getting Started
+Um sistema pensado para pequenas e médias granjas avícolas que pretende auxiliar e facilitar o dia-a-dia dos operários referente a administração da granja.
 
-First, run the development server:
+### 🚀 Status do Projeto
+> 🚧 Em desenvolvimento
+## ✨ Features
+
+- Cadastro e manutenção de lotes de aves
+- Gerenciamento financeiro e de produtos
+- Gestão de insumos
+- Controle diário de atividades básicas (água, ração, vacinas, mortalidade, etc.) via aplicativo celular
+
+
+## 💻 Instalação
+
+    Antes de começar, você vai precisar ter instalado em sua máquina:
+
+Instale o projeto utilizando npm:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+  npm install villa-system-web
+  cd villa-system-web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*   [Node.js](https://nodejs.org) (Versão 18.x ou superior)
+*   [NPM](https://npmjs.com) ou [Yarn](https://yarnpkg.com)
+*   [MySQL Server](https://mysql.com) 
+## 🛠️ Tecnologias Utilizadas
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+O ecossistema do projeto foi construído utilizando as seguintes tecnologias:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*   **React** — Biblioteca para construção da interface de usuário.
+*   **TypeScript** — Tipagem estática para maior segurança e produtividade.
+*   **Next.js** — Framework para renderização híbrida (SSR/SSG) e rotas de API.
+*   **MySQL** — Banco de dados relacional para armazenamento seguro dos dados de produção.
+*   **Prisma / Sequelize** *(Opcional - substitua se usar outro ORM)* — ORM para comunicação com o banco de dados.
 
-## Learn More
+## Autoras
 
-To learn more about Next.js, take a look at the following resources:
+- [@beatriz-miran](https://www.github.com/beatriz-miran)
+- [@GiIsis](https://www.github.com/GiIsis)
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Learn Next.js](https://nextjs.org/learn)
+## Licença
 
-You can check out the [Next.js GitHub repository](https://github.com/vercel/next.js) for more details.
 
-## Deploy on Vercel
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
