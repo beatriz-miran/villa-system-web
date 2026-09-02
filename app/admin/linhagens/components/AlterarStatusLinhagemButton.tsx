@@ -23,20 +23,13 @@ export default function AlterarStatusLinhagemButton({
     estadoInicial
   );
 
-  const [erroVisivel, setErroVisivel] = useState<string | null>(
-    null
-  );
+  const [erroOculto, setErroOculto] = useState(false);
 
   const linhagemAtiva = status === "ATIVO";
   const novoStatus = linhagemAtiva ? "INATIVO" : "ATIVO";
 
-  useEffect(() => {
-    if (state.erro) {
-      setErroVisivel(state.erro);
-    } else {
-      setErroVisivel(null);
-    }
-  }, [state]);
+  const erroVisivel =
+    !pendente && !erroOculto ? state.erro ?? null : null;
 
   useEffect(() => {
     if (!erroVisivel) {
@@ -44,7 +37,7 @@ export default function AlterarStatusLinhagemButton({
     }
 
     function fecharErro() {
-      setErroVisivel(null);
+      setErroOculto(true);
     }
 
     document.addEventListener("pointerdown", fecharErro);
@@ -56,18 +49,24 @@ export default function AlterarStatusLinhagemButton({
 
   return (
     <>
-      <form action={formAction}>
-        <input
-          type="hidden"
-          name="id"
-          value={linhagemId}
-        />
+      <form
+        action={formAction}
+        onSubmit={(event) => {
+          setErroOculto(false);
 
-        <input
-          type="hidden"
-          name="status"
-          value={novoStatus}
-        />
+          if (
+            linhagemAtiva &&
+            !window.confirm(
+              "Tem certeza que deseja desativar esta linhagem?"
+            )
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
+        <input type="hidden" name="id" value={linhagemId} />
+
+        <input type="hidden" name="status" value={novoStatus} />
 
         <button
           type="submit"
@@ -112,7 +111,7 @@ export default function AlterarStatusLinhagemButton({
 
             <button
               type="button"
-              onClick={() => setErroVisivel(null)}
+              onClick={() => setErroOculto(true)}
               className="shrink-0 rounded-md px-2 py-1 text-lg leading-none text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
               aria-label="Fechar aviso"
             >

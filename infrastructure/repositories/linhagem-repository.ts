@@ -3,6 +3,7 @@ import { prisma } from "../database/prisma";
 type MetaLinhagemDados = {
   semana: number;
   pesoMetaGramas: number | null;
+  consumoMetaGramas: number | null;
   produtividadeMetaPercentual: number | null;
 };
 
@@ -69,6 +70,7 @@ export async function buscarLinhagemPorId(id: number) {
           mls_id: true,
           mls_semana: true,
           mls_peso_meta_gramas: true,
+          mls_consumo_meta_gramas: true,
           mls_produtividade_meta_percentual: true,
         },
         orderBy: {
@@ -103,6 +105,7 @@ export async function criarLinhagem(dados: CriarLinhagemDados) {
         create: dados.metas.map((meta) => ({
           mls_semana: meta.semana,
           mls_peso_meta_gramas: meta.pesoMetaGramas,
+          mls_consumo_meta_gramas: meta.consumoMetaGramas,
           mls_produtividade_meta_percentual: meta.produtividadeMetaPercentual,
         })),
       },
@@ -116,11 +119,7 @@ export async function atualizarLinhagem(
   dados: AtualizarLinhagemDados
 ) {
   return prisma.$transaction(async (tx) => {
-    await tx.meta_linhagem_semanal.deleteMany({
-      where: { lin_id: id },
-    });
-
-    return tx.linhagem.update({
+    const linhagemAtualizada = await tx.linhagem.update({
       where: { lin_id: id },
       data: {
         lin_nome: dados.nome,
@@ -128,17 +127,55 @@ export async function atualizarLinhagem(
         tipo_ovo: {
           connect: { tov_id: dados.tipoOvoId },
         },
-        meta_linhagem_semanal: {
-          create: dados.metas.map((meta) => ({
-            mls_semana: meta.semana,
-            mls_peso_meta_gramas: meta.pesoMetaGramas,
-            mls_produtividade_meta_percentual:
-              meta.produtividadeMetaPercentual,
-          })),
-        },
       },
       select: selecaoLinhagem,
     });
+
+    const semanasInformadas = dados.metas.map(
+      (meta) => meta.semana
+    );
+
+    await tx.meta_linhagem_semanal.deleteMany({
+      where: {
+        lin_id: id,
+        ...(semanasInformadas.length > 0
+          ? {
+              mls_semana: {
+                notIn: semanasInformadas,
+              },
+            }
+          : {}),
+      },
+    });
+
+    await Promise.all(
+      dados.metas.map((meta) =>
+        tx.meta_linhagem_semanal.upsert({
+          where: {
+            lin_id_mls_semana: {
+              lin_id: id,
+              mls_semana: meta.semana,
+            },
+          },
+          update: {
+            mls_peso_meta_gramas: meta.pesoMetaGramas,
+            mls_consumo_meta_gramas: meta.consumoMetaGramas,
+            mls_produtividade_meta_percentual:
+              meta.produtividadeMetaPercentual,
+          },
+          create: {
+            mls_semana: meta.semana,
+            mls_peso_meta_gramas: meta.pesoMetaGramas,
+            mls_consumo_meta_gramas: meta.consumoMetaGramas,
+            mls_produtividade_meta_percentual:
+              meta.produtividadeMetaPercentual,
+            lin_id: id,
+          },
+        })
+      )
+    );
+
+    return linhagemAtualizada;
   });
 }
 

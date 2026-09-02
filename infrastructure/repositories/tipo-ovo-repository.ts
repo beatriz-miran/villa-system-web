@@ -11,3 +11,14 @@ export async function listarTiposOvo() {
     },
   });
 }
+
+export async function buscarTipoOvoPorId(id: number) {
+  return prisma.tipo_ovo.findUnique({
+    where: {
+      tov_id: id,
+    },
+    select: {
+      tov_id: true,
+    },
+  });
+}

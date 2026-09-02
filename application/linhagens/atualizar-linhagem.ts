@@ -1,10 +1,12 @@
 import { z } from "zod";
 
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   atualizarLinhagem as atualizarLinhagemRepository,
   buscarLinhagemPorId,
   buscarLinhagemPorNome,
 } from "@/infrastructure/repositories/linhagem-repository";
+import { buscarTipoOvoPorId } from "@/infrastructure/repositories/tipo-ovo-repository";
 
 import {
   existemSemanasDuplicadas,
@@ -20,7 +22,8 @@ const atualizarLinhagemSchema = z.object({
   nome: z
     .string()
     .trim()
-    .min(2, "Informe o nome da linhagem."),
+    .min(2, "Informe o nome da linhagem.")
+    .max(100, "O nome deve possuir no máximo 100 caracteres."),
 
   descricao: z
     .string()
@@ -78,35 +81,70 @@ export async function atualizarLinhagem(
     };
   }
 
-  const linhagemAtual = await buscarLinhagemPorId(id);
+  try {
+    const [linhagemAtual, linhagemComMesmoNome, tipoOvo] =
+      await Promise.all([
+        buscarLinhagemPorId(id),
+        buscarLinhagemPorNome(nome),
+        buscarTipoOvoPorId(tipoOvoId),
+      ]);
 
-  if (!linhagemAtual) {
+    if (!linhagemAtual) {
+      return {
+        sucesso: false,
+        mensagem: "Linhagem não encontrada.",
+      };
+    }
+
+    if (
+      linhagemComMesmoNome &&
+      linhagemComMesmoNome.lin_id !== id
+    ) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe outra linhagem cadastrada com este nome.",
+      };
+    }
+
+    if (!tipoOvo) {
+      return {
+        sucesso: false,
+        mensagem: "O tipo de ovo selecionado não existe.",
+      };
+    }
+
+    await atualizarLinhagemRepository(id, {
+      nome,
+      descricao: descricao || null,
+      tipoOvoId,
+      metas,
+    });
+
+    return {
+      sucesso: true,
+    };
+  } catch (error) {
+    if (erroPrismaTemCodigo(error, "P2002")) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe outra linhagem cadastrada com este nome.",
+      };
+    }
+
+    if (erroPrismaTemCodigo(error, "P2025")) {
+      return {
+        sucesso: false,
+        mensagem:
+          "A linhagem ou o tipo de ovo selecionado não existe mais.",
+      };
+    }
+
+    console.error("Erro ao atualizar linhagem:", error);
+
     return {
       sucesso: false,
-      mensagem: "Linhagem não encontrada.",
+      mensagem:
+        "Não foi possível atualizar a linhagem. Tente novamente.",
     };
   }
-
-  const linhagemComMesmoNome = await buscarLinhagemPorNome(nome);
-
-  if (
-    linhagemComMesmoNome &&
-    linhagemComMesmoNome.lin_id !== id
-  ) {
-    return {
-      sucesso: false,
-      mensagem: "Já existe outra linhagem cadastrada com este nome.",
-    };
-  }
-
-  await atualizarLinhagemRepository(id, {
-    nome,
-    descricao: descricao || null,
-    tipoOvoId,
-    metas,
-  });
-
-  return {
-    sucesso: true,
-  };
 }

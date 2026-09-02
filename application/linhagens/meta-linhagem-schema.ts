@@ -11,6 +11,11 @@ export const metaLinhagemSchema = z.object({
     .positive("A meta de peso deve ser maior que zero.")
     .nullable(),
 
+  consumoMetaGramas: z
+    .number()
+    .positive("A meta de consumo deve ser maior que zero.")
+    .nullable(),
+
   produtividadeMetaPercentual: z
     .number()
     .min(0, "A meta de produtividade não pode ser negativa.")

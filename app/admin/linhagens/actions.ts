@@ -21,33 +21,67 @@ export type AlterarStatusLinhagemActionState = {
   erro?: string;
 };
 
-function extrairMetas(formData: FormData): MetaLinhagemInput[] {
-  const bruto = String(formData.get("metas") ?? "[]");
+type ExtrairMetasResultado =
+  | {
+      sucesso: true;
+      metas: MetaLinhagemInput[];
+    }
+  | {
+      sucesso: false;
+      mensagem: string;
+    };
+
+function extrairMetas(formData: FormData): ExtrairMetasResultado {
+  const campoMetas = formData.get("metas");
+
+  if (typeof campoMetas !== "string") {
+    return {
+      sucesso: false,
+      mensagem: "Os dados das metas semanais não foram enviados.",
+    };
+  }
+
+  const bruto = campoMetas;
 
   let dados: unknown;
 
   try {
     dados = JSON.parse(bruto);
   } catch {
-    return [];
+    return {
+      sucesso: false,
+      mensagem:
+        "Não foi possível ler as metas semanais. Atualize a página e tente novamente.",
+    };
   }
 
   if (!Array.isArray(dados)) {
-    return [];
+    return {
+      sucesso: false,
+      mensagem: "Os dados das metas semanais são inválidos.",
+    };
   }
 
-  return dados.map((meta) => ({
-    semana: Number(meta?.semana),
-    pesoMetaGramas:
-      meta?.pesoMetaGramas === null || meta?.pesoMetaGramas === ""
-        ? null
-        : Number(meta?.pesoMetaGramas),
-    produtividadeMetaPercentual:
-      meta?.produtividadeMetaPercentual === null ||
-      meta?.produtividadeMetaPercentual === ""
-        ? null
-        : Number(meta?.produtividadeMetaPercentual),
-  }));
+  return {
+    sucesso: true,
+    metas: dados.map((meta) => ({
+      semana: Number(meta?.semana),
+      pesoMetaGramas:
+        meta?.pesoMetaGramas === null || meta?.pesoMetaGramas === ""
+          ? null
+          : Number(meta?.pesoMetaGramas),
+      consumoMetaGramas:
+        meta?.consumoMetaGramas === null ||
+        meta?.consumoMetaGramas === ""
+          ? null
+          : Number(meta?.consumoMetaGramas),
+      produtividadeMetaPercentual:
+        meta?.produtividadeMetaPercentual === null ||
+        meta?.produtividadeMetaPercentual === ""
+          ? null
+          : Number(meta?.produtividadeMetaPercentual),
+    })),
+  };
 }
 
 export async function criarLinhagemAction(
@@ -68,11 +102,19 @@ export async function criarLinhagemAction(
     };
   }
 
+  const metasResultado = extrairMetas(formData);
+
+  if (!metasResultado.sucesso) {
+    return {
+      erro: metasResultado.mensagem,
+    };
+  }
+
   const resultado = await criarLinhagem({
     nome: String(formData.get("nome") ?? ""),
     descricao: String(formData.get("descricao") ?? "") || undefined,
     tipoOvoId: Number(formData.get("tipoOvoId")),
-    metas: extrairMetas(formData),
+    metas: metasResultado.metas,
   });
 
   if (!resultado.sucesso) {
@@ -103,6 +145,14 @@ export async function atualizarLinhagemAction(
     };
   }
 
+  const metasResultado = extrairMetas(formData);
+
+  if (!metasResultado.sucesso) {
+    return {
+      erro: metasResultado.mensagem,
+    };
+  }
+
   const id = Number(formData.get("id"));
 
   const resultado = await atualizarLinhagem({
@@ -110,7 +160,7 @@ export async function atualizarLinhagemAction(
     nome: String(formData.get("nome") ?? ""),
     descricao: String(formData.get("descricao") ?? "") || undefined,
     tipoOvoId: Number(formData.get("tipoOvoId")),
-    metas: extrairMetas(formData),
+    metas: metasResultado.metas,
   });
 
   if (!resultado.sucesso) {

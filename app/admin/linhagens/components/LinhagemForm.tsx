@@ -13,6 +13,7 @@ import {
 type MetaLinha = {
   semana: string;
   pesoMetaGramas: string;
+  consumoMetaGramas: string;
   produtividadeMetaPercentual: string;
 };
 
@@ -35,6 +36,7 @@ type LinhagemFormProps = {
         metas: {
           semana: number;
           pesoMetaGramas: number | null;
+          consumoMetaGramas: number | null;
           produtividadeMetaPercentual: number | null;
         }[];
       };
@@ -47,12 +49,17 @@ const estadoInicialAtualizar: AtualizarLinhagemActionState = {};
 function metaParaLinha(meta: {
   semana: number;
   pesoMetaGramas: number | null;
+  consumoMetaGramas: number | null;
   produtividadeMetaPercentual: number | null;
 }): MetaLinha {
   return {
     semana: String(meta.semana),
     pesoMetaGramas:
       meta.pesoMetaGramas === null ? "" : String(meta.pesoMetaGramas),
+    consumoMetaGramas:
+      meta.consumoMetaGramas === null
+        ? ""
+        : String(meta.consumoMetaGramas),
     produtividadeMetaPercentual:
       meta.produtividadeMetaPercentual === null
         ? ""
@@ -74,6 +81,7 @@ function proximaSemana(metas: MetaLinha[]) {
 
 export default function LinhagemForm(props: LinhagemFormProps) {
   const { tiposOvo, modo } = props;
+  const semTiposOvo = tiposOvo.length === 0;
 
   const [estadoCriar, acaoCriar, pendenteCriar] = useActionState(
     criarLinhagemAction,
@@ -97,6 +105,7 @@ export default function LinhagemForm(props: LinhagemFormProps) {
       {
         semana: String(proximaSemana(atual)),
         pesoMetaGramas: "",
+        consumoMetaGramas: "",
         produtividadeMetaPercentual: "",
       },
     ]);
@@ -122,6 +131,10 @@ export default function LinhagemForm(props: LinhagemFormProps) {
     semana: Number(meta.semana),
     pesoMetaGramas:
       meta.pesoMetaGramas === "" ? null : Number(meta.pesoMetaGramas),
+    consumoMetaGramas:
+      meta.consumoMetaGramas === ""
+        ? null
+        : Number(meta.consumoMetaGramas),
     produtividadeMetaPercentual:
       meta.produtividadeMetaPercentual === ""
         ? null
@@ -157,6 +170,7 @@ export default function LinhagemForm(props: LinhagemFormProps) {
           name="nome"
           type="text"
           required
+          maxLength={100}
           placeholder="Digite o nome da linhagem"
           defaultValue={modo === "editar" ? props.linhagem.nome : ""}
           className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
@@ -196,13 +210,19 @@ export default function LinhagemForm(props: LinhagemFormProps) {
           id="tipoOvoId"
           name="tipoOvoId"
           required
+          disabled={semTiposOvo}
+          aria-describedby={
+            semTiposOvo ? "aviso-sem-tipos-ovo" : undefined
+          }
           defaultValue={
             modo === "editar" ? props.linhagem.tipoOvoId : ""
           }
           className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
         >
           <option value="" disabled>
-            Selecione um tipo de ovo
+            {semTiposOvo
+              ? "Nenhum tipo de ovo disponível"
+              : "Selecione um tipo de ovo"}
           </option>
 
           {tiposOvo.map((tipoOvo) => (
@@ -211,6 +231,17 @@ export default function LinhagemForm(props: LinhagemFormProps) {
             </option>
           ))}
         </select>
+
+        {semTiposOvo && (
+          <p
+            id="aviso-sem-tipos-ovo"
+            role="alert"
+            className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800"
+          >
+            Nenhum tipo de ovo está cadastrado. Cadastre os tipos de ovo
+            antes de criar uma linhagem.
+          </p>
+        )}
       </div>
 
       <div>
@@ -237,14 +268,18 @@ export default function LinhagemForm(props: LinhagemFormProps) {
             {metas.map((meta, indice) => (
               <div
                 key={indice}
-                className="grid grid-cols-2 gap-3 rounded-md border border-gray-200 p-3 sm:grid-cols-4 sm:items-end"
+                className="grid grid-cols-1 gap-3 rounded-md border border-gray-200 p-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
               >
                 <div>
-                  <label className="text-xs font-medium text-gray-500">
+                  <label
+                    htmlFor={`meta-semana-${indice}`}
+                    className="text-xs font-medium text-gray-500"
+                  >
                     Semana
                   </label>
 
                   <input
+                    id={`meta-semana-${indice}`}
                     type="number"
                     min={1}
                     required
@@ -257,13 +292,17 @@ export default function LinhagemForm(props: LinhagemFormProps) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-500">
+                  <label
+                    htmlFor={`meta-peso-${indice}`}
+                    className="text-xs font-medium text-gray-500"
+                  >
                     Peso meta (g)
                   </label>
 
                   <input
+                    id={`meta-peso-${indice}`}
                     type="number"
-                    min={0}
+                    min={0.01}
                     step="0.01"
                     placeholder="—"
                     value={meta.pesoMetaGramas}
@@ -279,11 +318,41 @@ export default function LinhagemForm(props: LinhagemFormProps) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-500">
+                  <label
+                    htmlFor={`meta-consumo-${indice}`}
+                    className="text-xs font-medium text-gray-500"
+                  >
+                    Consumo de ração (g/ave/dia)
+                  </label>
+
+                  <input
+                    id={`meta-consumo-${indice}`}
+                    type="number"
+                    min={0.01}
+                    step="0.01"
+                    placeholder="—"
+                    value={meta.consumoMetaGramas}
+                    onChange={(event) =>
+                      atualizarMeta(
+                        indice,
+                        "consumoMetaGramas",
+                        event.target.value
+                      )
+                    }
+                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor={`meta-produtividade-${indice}`}
+                    className="text-xs font-medium text-gray-500"
+                  >
                     Produtividade (%)
                   </label>
 
                   <input
+                    id={`meta-produtividade-${indice}`}
                     type="number"
                     min={0}
                     max={100}
@@ -301,7 +370,7 @@ export default function LinhagemForm(props: LinhagemFormProps) {
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-2 lg:col-span-4">
                   <button
                     type="button"
                     onClick={() => removerMeta(indice)}
@@ -335,7 +404,7 @@ export default function LinhagemForm(props: LinhagemFormProps) {
 
         <button
           type="submit"
-          disabled={pendente}
+          disabled={pendente || semTiposOvo}
           className="rounded-md bg-[#1B3B32] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#142d26] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {pendente

@@ -4,6 +4,8 @@ import {
   buscarLinhagemPorNome,
   criarLinhagem as criarLinhagemRepository,
 } from "@/infrastructure/repositories/linhagem-repository";
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
+import { buscarTipoOvoPorId } from "@/infrastructure/repositories/tipo-ovo-repository";
 
 import {
   existemSemanasDuplicadas,
@@ -14,7 +16,8 @@ const criarLinhagemSchema = z.object({
   nome: z
     .string()
     .trim()
-    .min(2, "Informe o nome da linhagem."),
+    .min(2, "Informe o nome da linhagem.")
+    .max(100, "O nome deve possuir no máximo 100 caracteres."),
 
   descricao: z
     .string()
@@ -69,23 +72,57 @@ export async function criarLinhagem(
     };
   }
 
-  const linhagemExistente = await buscarLinhagemPorNome(nome);
+  try {
+    const [linhagemExistente, tipoOvo] = await Promise.all([
+      buscarLinhagemPorNome(nome),
+      buscarTipoOvoPorId(tipoOvoId),
+    ]);
 
-  if (linhagemExistente) {
+    if (linhagemExistente) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe uma linhagem cadastrada com este nome.",
+      };
+    }
+
+    if (!tipoOvo) {
+      return {
+        sucesso: false,
+        mensagem: "O tipo de ovo selecionado não existe.",
+      };
+    }
+
+    await criarLinhagemRepository({
+      nome,
+      descricao: descricao || null,
+      tipoOvoId,
+      metas,
+    });
+
+    return {
+      sucesso: true,
+    };
+  } catch (error) {
+    if (erroPrismaTemCodigo(error, "P2002")) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe uma linhagem cadastrada com este nome.",
+      };
+    }
+
+    if (erroPrismaTemCodigo(error, "P2025")) {
+      return {
+        sucesso: false,
+        mensagem: "O tipo de ovo selecionado não existe mais.",
+      };
+    }
+
+    console.error("Erro ao cadastrar linhagem:", error);
+
     return {
       sucesso: false,
-      mensagem: "Já existe uma linhagem cadastrada com este nome.",
+      mensagem:
+        "Não foi possível cadastrar a linhagem. Tente novamente.",
     };
   }
-
-  await criarLinhagemRepository({
-    nome,
-    descricao: descricao || null,
-    tipoOvoId,
-    metas,
-  });
-
-  return {
-    sucesso: true,
-  };
 }

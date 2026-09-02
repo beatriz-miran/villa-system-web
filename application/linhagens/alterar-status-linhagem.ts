@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   atualizarStatusLinhagem,
   buscarLinhagemPorId,
@@ -51,24 +52,41 @@ export async function alterarStatusLinhagem(
     status,
   } = validacao.data;
 
-  const linhagem = await buscarLinhagemPorId(id);
+  try {
+    const linhagem = await buscarLinhagemPorId(id);
 
-  if (!linhagem) {
-    return {
-      sucesso: false,
-      mensagem: "Linhagem não encontrada.",
-    };
-  }
+    if (!linhagem) {
+      return {
+        sucesso: false,
+        mensagem: "Linhagem não encontrada.",
+      };
+    }
 
-  if (linhagem.lin_status === status) {
+    if (linhagem.lin_status === status) {
+      return {
+        sucesso: true,
+      };
+    }
+
+    await atualizarStatusLinhagem(id, status);
+
     return {
       sucesso: true,
     };
+  } catch (error) {
+    if (erroPrismaTemCodigo(error, "P2025")) {
+      return {
+        sucesso: false,
+        mensagem: "Linhagem não encontrada.",
+      };
+    }
+
+    console.error("Erro ao alterar o status da linhagem:", error);
+
+    return {
+      sucesso: false,
+      mensagem:
+        "Não foi possível alterar o status da linhagem. Tente novamente.",
+    };
   }
-
-  await atualizarStatusLinhagem(id, status);
-
-  return {
-    sucesso: true,
-  };
 }

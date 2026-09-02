@@ -56,6 +56,10 @@ export default async function EditarLinhagemPage({
                   meta.mls_peso_meta_gramas === null
                     ? null
                     : Number(meta.mls_peso_meta_gramas),
+                consumoMetaGramas:
+                  meta.mls_consumo_meta_gramas === null
+                    ? null
+                    : Number(meta.mls_consumo_meta_gramas),
                 produtividadeMetaPercentual:
                   meta.mls_produtividade_meta_percentual === null
                     ? null
