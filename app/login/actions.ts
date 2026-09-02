@@ -1,7 +1,11 @@
 "use server";
 
+import {
+  AuthError,
+  CredentialsSignin,
+} from "next-auth";
+
 import { signIn } from "@/auth";
-import { AuthError } from "next-auth";
 
 export async function autenticar(
   _prevState: string | undefined,
@@ -10,6 +14,13 @@ export async function autenticar(
   try {
     await signIn("credentials", formData);
   } catch (error) {
+    if (
+      error instanceof CredentialsSignin &&
+      error.code === "muitas_tentativas"
+    ) {
+      return "Muitas tentativas incorretas. Aguarde 15 minutos e tente novamente.";
+    }
+
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":

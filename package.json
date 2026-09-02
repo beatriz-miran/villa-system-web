@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "prisma generate --no-hints",
     "dev": "next dev",
+    "prebuild": "prisma generate --no-hints",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -30,6 +32,10 @@
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "mariadb": "3.5.3",
+    "mysql2": "3.22.0"
   },
   "type": "module"
 }

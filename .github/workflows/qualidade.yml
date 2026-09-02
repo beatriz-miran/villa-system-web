@@ -1,0 +1,37 @@
+name: Qualidade do código
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Lint e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: mysql://usuario:senha@127.0.0.1:3306/villa_system
+      AUTH_SECRET: chave-temporaria-usada-apenas-no-build
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Configurar o Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar as dependências
+        run: npm ci
+
+      - name: Verificar o código
+        run: npm run lint
+
+      - name: Compilar o projeto
+        run: npm run build
