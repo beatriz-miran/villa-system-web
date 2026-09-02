@@ -1,15 +1,37 @@
-import NextAuth from "next-auth";
+import NextAuth, {
+  CredentialsSignin,
+} from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { z } from "zod";
 
 import { authConfig } from "./auth.config";
 import { prisma } from "@/infrastructure/database/prisma";
+import {
+  criarChaveTentativaLogin,
+  limparTentativasLogin,
+  registrarFalhaLogin,
+  tentativaLoginEstaBloqueada,
+} from "@/infrastructure/seguranca/limitador-tentativas-login";
 
 const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
 });
+
+class MuitasTentativasLoginError extends CredentialsSignin {
+  code = "muitas_tentativas";
+}
+
+function rejeitarTentativaLogin(chave: string) {
+  registrarFalhaLogin(chave);
+
+  if (tentativaLoginEstaBloqueada(chave)) {
+    throw new MuitasTentativasLoginError();
+  }
+
+  return null;
+}
 
 const nextAuth = NextAuth({
   ...authConfig,
@@ -49,7 +71,7 @@ const nextAuth = NextAuth({
         },
       },
 
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const parsedCredentials =
           credentialsSchema.safeParse(credentials);
 
@@ -57,16 +79,34 @@ const nextAuth = NextAuth({
           return null;
         }
 
-        const { email, password } = parsedCredentials.data;
+        const email =
+          parsedCredentials.data.email.toLowerCase();
+
+        const password =
+          parsedCredentials.data.password;
+
+        const chaveTentativa =
+          criarChaveTentativaLogin(email, request);
+
+        if (
+          tentativaLoginEstaBloqueada(chaveTentativa)
+        ) {
+          throw new MuitasTentativasLoginError();
+        }
 
         const usuario = await prisma.usuario.findUnique({
           where: {
-            usu_email: email.toLowerCase(),
+            usu_email: email,
           },
         });
 
-        if (!usuario || usuario.usu_status !== "ATIVO") {
-          return null;
+        if (
+          !usuario ||
+          usuario.usu_status !== "ATIVO"
+        ) {
+          return rejeitarTentativaLogin(
+            chaveTentativa
+          );
         }
 
         const senhaCorreta = await compare(
@@ -75,8 +115,12 @@ const nextAuth = NextAuth({
         );
 
         if (!senhaCorreta) {
-          return null;
+          return rejeitarTentativaLogin(
+            chaveTentativa
+          );
         }
+
+        limparTentativasLogin(chaveTentativa);
 
         return {
           id: String(usuario.usu_id),
@@ -106,22 +150,26 @@ export async function auth() {
 
   const usuarioId = Number(session.user.id);
 
-  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+  if (
+    !Number.isInteger(usuarioId) ||
+    usuarioId <= 0
+  ) {
     return null;
   }
 
-  const usuarioAtual = await prisma.usuario.findUnique({
-    where: {
-      usu_id: usuarioId,
-    },
-    select: {
-      usu_id: true,
-      usu_nome: true,
-      usu_email: true,
-      usu_perfil_acesso: true,
-      usu_status: true,
-    },
-  });
+  const usuarioAtual =
+    await prisma.usuario.findUnique({
+      where: {
+        usu_id: usuarioId,
+      },
+      select: {
+        usu_id: true,
+        usu_nome: true,
+        usu_email: true,
+        usu_perfil_acesso: true,
+        usu_status: true,
+      },
+    });
 
   if (
     !usuarioAtual ||
@@ -133,7 +181,8 @@ export async function auth() {
   session.user.id = String(usuarioAtual.usu_id);
   session.user.name = usuarioAtual.usu_nome;
   session.user.email = usuarioAtual.usu_email;
-  session.user.perfil = usuarioAtual.usu_perfil_acesso;
+  session.user.perfil =
+    usuarioAtual.usu_perfil_acesso;
 
   return session;
 }

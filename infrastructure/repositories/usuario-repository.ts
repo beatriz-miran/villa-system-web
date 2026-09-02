@@ -30,6 +30,15 @@ export async function listarUsuarios() {
   });
 }
 
+export async function contarAdministradoresAtivos() {
+  return prisma.usuario.count({
+    where: {
+      usu_perfil_acesso: "ADMIN",
+      usu_status: "ATIVO",
+    },
+  });
+}
+
 export async function buscarUsuarioPorId(id: number) {
   return prisma.usuario.findUnique({
     where: {
@@ -56,7 +65,9 @@ export async function buscarUsuarioPorEmail(email: string) {
   });
 }
 
-export async function criarUsuario(dados: CriarUsuarioDados) {
+export async function criarUsuario(
+  dados: CriarUsuarioDados
+) {
   return prisma.usuario.create({
     data: {
       usu_nome: dados.nome,

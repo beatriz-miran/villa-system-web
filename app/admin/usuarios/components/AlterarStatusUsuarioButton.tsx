@@ -23,20 +23,15 @@ export default function AlterarStatusUsuarioButton({
     estadoInicial
   );
 
-  const [erroVisivel, setErroVisivel] = useState<string | null>(
-    null
-  );
+  const [erroOculto, setErroOculto] = useState(false);
 
   const usuarioAtivo = status === "ATIVO";
   const novoStatus = usuarioAtivo ? "INATIVO" : "ATIVO";
 
-  useEffect(() => {
-    if (state.erro) {
-      setErroVisivel(state.erro);
-    } else {
-      setErroVisivel(null);
-    }
-  }, [state]);
+  const erroVisivel =
+    !pendente && !erroOculto
+      ? state.erro ?? null
+      : null;
 
   useEffect(() => {
     if (!erroVisivel) {
@@ -44,7 +39,7 @@ export default function AlterarStatusUsuarioButton({
     }
 
     function fecharErro() {
-      setErroVisivel(null);
+      setErroOculto(true);
     }
 
     document.addEventListener("pointerdown", fecharErro);
@@ -56,7 +51,10 @@ export default function AlterarStatusUsuarioButton({
 
   return (
     <>
-      <form action={formAction}>
+      <form
+        action={formAction}
+        onSubmit={() => setErroOculto(false)}
+      >
         <input
           type="hidden"
           name="id"
@@ -112,7 +110,7 @@ export default function AlterarStatusUsuarioButton({
 
             <button
               type="button"
-              onClick={() => setErroVisivel(null)}
+              onClick={() => setErroOculto(true)}
               className="shrink-0 rounded-md px-2 py-1 text-lg leading-none text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
               aria-label="Fechar aviso"
             >

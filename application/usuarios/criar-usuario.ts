@@ -5,6 +5,7 @@ import {
   buscarUsuarioPorEmail,
   criarUsuario as criarUsuarioRepository,
 } from "@/infrastructure/repositories/usuario-repository";
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 
 const criarUsuarioSchema = z.object({
   nome: z
@@ -26,7 +27,10 @@ const criarUsuarioSchema = z.object({
 
   senha: z
     .string()
-    .min(8, "A senha deve possuir pelo menos 8 caracteres."),
+    .min(
+      8,
+      "A senha deve possuir pelo menos 8 caracteres."
+    ),
 });
 
 export type CriarUsuarioInput = z.infer<
@@ -45,7 +49,8 @@ export type CriarUsuarioResultado =
 export async function criarUsuario(
   dados: CriarUsuarioInput
 ): Promise<CriarUsuarioResultado> {
-  const validacao = criarUsuarioSchema.safeParse(dados);
+  const validacao =
+    criarUsuarioSchema.safeParse(dados);
 
   if (!validacao.success) {
     return {
@@ -65,26 +70,48 @@ export async function criarUsuario(
 
   const emailNormalizado = email.toLowerCase();
 
-  const usuarioExistente =
-    await buscarUsuarioPorEmail(emailNormalizado);
+  try {
+    const usuarioExistente =
+      await buscarUsuarioPorEmail(emailNormalizado);
 
-  if (usuarioExistente) {
+    if (usuarioExistente) {
+      return {
+        sucesso: false,
+        mensagem:
+          "Já existe um usuário com este e-mail.",
+      };
+    }
+
+    const senhaHash = await hash(senha, 12);
+
+    await criarUsuarioRepository({
+      nome,
+      email: emailNormalizado,
+      perfil,
+      senhaHash,
+    });
+
+    return {
+      sucesso: true,
+    };
+  } catch (error) {
+    if (erroPrismaTemCodigo(error, "P2002")) {
+      return {
+        sucesso: false,
+        mensagem:
+          "Já existe um usuário com este e-mail.",
+      };
+    }
+
+    console.error(
+      "Erro ao cadastrar usuário:",
+      error
+    );
+
     return {
       sucesso: false,
-      mensagem: "Já existe um usuário com este e-mail.",
+      mensagem:
+        "Não foi possível cadastrar o usuário. Tente novamente.",
     };
   }
-
-  const senhaHash = await hash(senha, 12);
-
-  await criarUsuarioRepository({
-    nome,
-    email: emailNormalizado,
-    perfil,
-    senhaHash,
-  });
-
-  return {
-    sucesso: true,
-  };
 }

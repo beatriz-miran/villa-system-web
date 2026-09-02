@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   atualizarStatusUsuario,
   buscarUsuarioPorId,
+  contarAdministradoresAtivos,
 } from "@/infrastructure/repositories/usuario-repository";
 
 const alterarStatusUsuarioSchema = z.object({
@@ -40,7 +42,8 @@ export type AlterarStatusUsuarioResultado =
 export async function alterarStatusUsuario(
   dados: AlterarStatusUsuarioInput
 ): Promise<AlterarStatusUsuarioResultado> {
-  const validacao = alterarStatusUsuarioSchema.safeParse(dados);
+  const validacao =
+    alterarStatusUsuarioSchema.safeParse(dados);
 
   if (!validacao.success) {
     return {
@@ -57,35 +60,73 @@ export async function alterarStatusUsuario(
     usuarioLogadoId,
   } = validacao.data;
 
-  const usuario = await buscarUsuarioPorId(id);
+  try {
+    const usuario = await buscarUsuarioPorId(id);
 
-  if (!usuario) {
-    return {
-      sucesso: false,
-      mensagem: "Usuário não encontrado.",
-    };
-  }
+    if (!usuario) {
+      return {
+        sucesso: false,
+        mensagem: "Usuário não encontrado.",
+      };
+    }
 
-  if (
-    id === usuarioLogadoId &&
-    status === "INATIVO"
-  ) {
-    return {
-      sucesso: false,
-      mensagem:
-        "Você não pode desativar o seu próprio usuário.",
-    };
-  }
+    if (
+      id === usuarioLogadoId &&
+      status === "INATIVO"
+    ) {
+      return {
+        sucesso: false,
+        mensagem:
+          "Você não pode desativar o seu próprio usuário.",
+      };
+    }
 
-  if (usuario.usu_status === status) {
+    const estaDesativandoAdministradorAtivo =
+      usuario.usu_perfil_acesso === "ADMIN" &&
+      usuario.usu_status === "ATIVO" &&
+      status === "INATIVO";
+
+    if (estaDesativandoAdministradorAtivo) {
+      const totalAdministradoresAtivos =
+        await contarAdministradoresAtivos();
+
+      if (totalAdministradoresAtivos <= 1) {
+        return {
+          sucesso: false,
+          mensagem:
+            "O sistema deve manter pelo menos um administrador ativo.",
+        };
+      }
+    }
+
+    if (usuario.usu_status === status) {
+      return {
+        sucesso: true,
+      };
+    }
+
+    await atualizarStatusUsuario(id, status);
+
     return {
       sucesso: true,
     };
+  } catch (error) {
+    if (erroPrismaTemCodigo(error, "P2025")) {
+      return {
+        sucesso: false,
+        mensagem: "Usuário não encontrado.",
+      };
+    }
+
+    console.error(
+      "Erro ao alterar o status do usuário:",
+      error
+    );
+
+    return {
+      sucesso: false,
+      mensagem:
+        "Não foi possível alterar o status do usuário. Tente novamente.",
+    };
   }
-
-  await atualizarStatusUsuario(id, status);
-
-  return {
-    sucesso: true,
-  };
 }
