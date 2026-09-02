@@ -16,6 +16,10 @@ const itensComRota = [
     nome: "Usuários",
     href: "/admin/usuarios",
   },
+  {
+    nome: "Linhagens",
+    href: "/admin/linhagens",
+  },
 ];
 
 const itensFuturos = [
