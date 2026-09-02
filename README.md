@@ -17,10 +17,17 @@ Atualmente, o sistema possui:
 - proteção contra desativação do próprio usuário;
 - proteção para manter pelo menos um administrador ativo;
 - bloqueio temporário após várias tentativas incorretas de login;
+- catálogo de linhagens;
+- cadastro, edição e listagem de linhagens;
+- ativação e desativação de linhagens;
+- confirmação antes da desativação de uma linhagem;
+- cadastro de metas semanais de peso, consumo de ração e produtividade;
+- carga inicial dos tipos de ovo Branco e Marrom;
+- carga inicial da linhagem Hy-Line Brown com metas para 100 semanas;
 - tratamento de páginas inexistentes e erros inesperados;
 - endpoint para verificar a conexão com o banco de dados.
 
-As funcionalidades específicas de manejo, produção, estoque e financeiro ainda estão em desenvolvimento.
+As funcionalidades específicas de lotes, manejo, produção, estoque e financeiro ainda estão em desenvolvimento.
 
 ## Tecnologias utilizadas
 
@@ -108,7 +115,7 @@ npx prisma validate
 Gere o Prisma Client:
 
 ```powershell
-npx prisma generate
+npx prisma generate --no-hints
 ```
 
 Para verificar a conexão durante o desenvolvimento, inicie o sistema e acesse:
@@ -125,6 +132,31 @@ O resultado esperado é:
   "database": "connected"
 }
 ```
+
+## Carga inicial de dados
+
+O projeto possui uma seed em:
+
+```text
+prisma/seed.ts
+```
+
+Ela cadastra ou reaproveita:
+
+- o tipo de ovo Branco;
+- o tipo de ovo Marrom;
+- a linhagem Hy-Line Brown;
+- 100 semanas de metas de peso, consumo de ração e produtividade para sistema alternativo ou livre.
+
+Para executar a seed no banco configurado no seu arquivo `.env`, utilize:
+
+```powershell
+npm run seed
+```
+
+A seed pode ser executada novamente sem criar registros duplicados.
+
+Os dados são inseridos somente no banco indicado pela variável `DATABASE_URL` do computador em que o comando for executado. Fazer `git pull` não executa a seed automaticamente.
 
 ## Executar em desenvolvimento
 
@@ -152,6 +184,8 @@ Criar a compilação de produção:
 npm run build
 ```
 
+O processo de build gera o Prisma Client automaticamente antes de compilar o projeto.
+
 Verificar vulnerabilidades conhecidas:
 
 ```powershell
@@ -167,6 +201,11 @@ Não utilize `npm audit fix --force` sem analisar as mudanças, pois ele pode in
 | `/login` | Acesso ao sistema |
 | `/admin` | Área do administrador |
 | `/admin/usuarios` | Gerenciamento de usuários |
+| `/admin/usuarios/novo` | Cadastro de usuário |
+| `/admin/usuarios/[id]/editar` | Edição de usuário |
+| `/admin/linhagens` | Gerenciamento de linhagens |
+| `/admin/linhagens/novo` | Cadastro de linhagem |
+| `/admin/linhagens/[id]/editar` | Edição de linhagem e metas semanais |
 | `/operador` | Área do operador |
 | `/api/health/database` | Verificação da conexão com o banco |
 | `/api/admin/usuarios` | Consulta administrativa de usuários |
@@ -178,13 +217,13 @@ app/
   Páginas, layouts, componentes, ações e rotas da API
 
 application/
-  Regras de aplicação, autorizações e operações de usuários
+  Regras de aplicação, autorizações e operações de usuários e linhagens
 
 infrastructure/
   Conexão com o banco, repositórios e recursos de segurança
 
 prisma/
-  Schema do banco de dados
+  Schema do banco de dados e carga inicial de dados
 
 public/
   Imagens e arquivos públicos
@@ -206,7 +245,8 @@ O projeto possui:
 - proteção das páginas e ações administrativas;
 - limitação de tentativas incorretas de login;
 - mensagens genéricas para credenciais inválidas;
-- tratamento de erros de banco sem exposição de detalhes internos.
+- tratamento de erros de banco sem exposição de detalhes internos;
+- proteção das operações administrativas de usuários e linhagens.
 
 ## Limitações conhecidas
 
@@ -218,19 +258,19 @@ Antes de uma implantação com múltiplas instâncias, essa proteção deverá u
 
 ### Dependência interna do Prisma
 
-O `npm audit` ainda informa uma vulnerabilidade na cadeia:
+O `npm audit` ainda pode informar uma vulnerabilidade na cadeia:
 
 ```text
 deepmerge-ts → @prisma/config → prisma
 ```
 
-A correção disponível exige uma versão principal incompatível do `deepmerge-ts`. O projeto aguarda uma atualização oficialmente compatível do Prisma e não utiliza `npm audit fix --force`.
+A correção automática disponível pode instalar versões incompatíveis. O projeto aguarda uma atualização oficialmente compatível e não utiliza `npm audit fix --force` sem análise.
 
 ## Perfis de acesso
 
 ### Administrador
 
-Responsável pelas configurações administrativas e pelo gerenciamento dos usuários.
+Responsável pelas configurações administrativas e pelo gerenciamento de usuários e linhagens.
 
 ### Operador
 
