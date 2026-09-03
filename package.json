@@ -9,7 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@prisma/adapter-mariadb": "^7.10.0",
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
