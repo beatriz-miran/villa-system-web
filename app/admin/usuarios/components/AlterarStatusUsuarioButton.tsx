@@ -53,7 +53,19 @@ export default function AlterarStatusUsuarioButton({
     <>
       <form
         action={formAction}
-        onSubmit={() => setErroOculto(false)}
+        onSubmit={(event) => {
+          if (
+            usuarioAtivo &&
+            !window.confirm(
+              "Tem certeza que deseja desativar este usuário?"
+            )
+          ) {
+            event.preventDefault();
+            return;
+          }
+
+          setErroOculto(false);
+        }}
       >
         <input
           type="hidden"

@@ -1,21 +1,29 @@
 import { hash } from "bcryptjs";
 import { z } from "zod";
 
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   buscarUsuarioPorEmail,
   criarUsuario as criarUsuarioRepository,
 } from "@/infrastructure/repositories/usuario-repository";
-import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 
 const criarUsuarioSchema = z.object({
   nome: z
     .string()
     .trim()
-    .min(2, "Informe o nome do usuário."),
+    .min(2, "Informe o nome do usuário.")
+    .max(
+      100,
+      "O nome deve possuir no máximo 100 caracteres."
+    ),
 
   email: z
     .string()
     .trim()
+    .max(
+      150,
+      "O e-mail deve possuir no máximo 150 caracteres."
+    )
     .email("Informe um e-mail válido."),
 
   perfil: z.enum(
@@ -30,6 +38,10 @@ const criarUsuarioSchema = z.object({
     .min(
       8,
       "A senha deve possuir pelo menos 8 caracteres."
+    )
+    .max(
+      72,
+      "A senha deve possuir no máximo 72 caracteres."
     ),
 });
 

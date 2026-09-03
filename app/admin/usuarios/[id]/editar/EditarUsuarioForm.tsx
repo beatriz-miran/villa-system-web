@@ -48,7 +48,10 @@ export default function EditarUsuarioForm({
           name="nome"
           type="text"
           required
+          minLength={2}
+          maxLength={100}
           defaultValue={usuario.nome}
+          autoComplete="name"
           className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
         />
       </div>
@@ -66,6 +69,7 @@ export default function EditarUsuarioForm({
           name="email"
           type="email"
           required
+          maxLength={150}
           defaultValue={usuario.email}
           autoComplete="email"
           className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
@@ -119,7 +123,9 @@ export default function EditarUsuarioForm({
           disabled={pendente}
           className="rounded-md bg-[#1B3B32] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#142d26] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {pendente ? "Salvando..." : "Salvar alterações"}
+          {pendente
+            ? "Salvando..."
+            : "Salvar alterações"}
         </button>
       </div>
     </form>
