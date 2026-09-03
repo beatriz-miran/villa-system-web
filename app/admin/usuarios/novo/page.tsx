@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import {
@@ -45,7 +46,10 @@ export default function NovoUsuarioPage() {
                 name="nome"
                 type="text"
                 required
+                minLength={2}
+                maxLength={100}
                 placeholder="Digite o nome"
+                autoComplete="name"
                 className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
               />
             </div>
@@ -63,6 +67,7 @@ export default function NovoUsuarioPage() {
                 name="email"
                 type="email"
                 required
+                maxLength={150}
                 placeholder="Digite o e-mail"
                 autoComplete="email"
                 className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
@@ -112,6 +117,7 @@ export default function NovoUsuarioPage() {
                 type="password"
                 required
                 minLength={8}
+                maxLength={72}
                 placeholder="Mínimo de 8 caracteres"
                 autoComplete="new-password"
                 className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
@@ -128,19 +134,21 @@ export default function NovoUsuarioPage() {
             )}
 
             <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-              <a
+              <Link
                 href="/admin/usuarios"
                 className="rounded-md border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
                 Cancelar
-              </a>
+              </Link>
 
               <button
                 type="submit"
                 disabled={pendente}
                 className="rounded-md bg-[#1B3B32] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#142d26] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {pendente ? "Salvando..." : "Cadastrar usuário"}
+                {pendente
+                  ? "Salvando..."
+                  : "Cadastrar usuário"}
               </button>
             </div>
           </form>

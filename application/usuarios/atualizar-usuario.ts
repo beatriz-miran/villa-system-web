@@ -17,11 +17,19 @@ const atualizarUsuarioSchema = z.object({
   nome: z
     .string()
     .trim()
-    .min(2, "Informe o nome do usuário."),
+    .min(2, "Informe o nome do usuário.")
+    .max(
+      100,
+      "O nome deve possuir no máximo 100 caracteres."
+    ),
 
   email: z
     .string()
     .trim()
+    .max(
+      150,
+      "O e-mail deve possuir no máximo 150 caracteres."
+    )
     .email("Informe um e-mail válido."),
 
   perfil: z.enum(
