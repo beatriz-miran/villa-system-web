@@ -10,7 +10,6 @@ import {
   Bird,
   ChartLine,
 } from "lucide-react";
-
 import Image from "next/image";
 import { useActionState, useState } from "react";
 
@@ -69,14 +68,18 @@ export default function LoginDesktop() {
             <br />
             menos anotações,
             <br />
-            mais <span className="font-bold">produtividade.</span>
+            mais{" "}
+            <span className="font-bold">
+              produtividade.
+            </span>
           </h1>
 
           <div className="my-6 h-[3px] w-28 rounded-full bg-[#F4B324]" />
 
           <p className="max-w-[350px] text-[15px] leading-[1.45] text-white/90">
-            O Villa System é um sistema de gestão desenvolvido para simplificar
-            e profissionalizar a administração de pequenas e médias granjas
+            O Villa System é um sistema de gestão
+            desenvolvido para simplificar e profissionalizar
+            a administração de pequenas e médias granjas
             avícolas.
           </p>
 
@@ -134,7 +137,11 @@ export default function LoginDesktop() {
             </div>
 
             <form action={formAction} className="space-y-4">
-              <input type="hidden" name="redirectTo" value="/" />
+              <input
+                type="hidden"
+                name="redirectTo"
+                value="/"
+              />
 
               {/* E-mail */}
               <div className="flex flex-col gap-2">
@@ -158,6 +165,7 @@ export default function LoginDesktop() {
                     placeholder="Digite seu e-mail"
                     autoComplete="email"
                     required
+                    maxLength={150}
                     className="w-full rounded-md border border-gray-300 py-3 pl-10 pr-3 text-[15px] text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
                   />
                 </div>
@@ -181,20 +189,28 @@ export default function LoginDesktop() {
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    type={
+                      showPassword ? "text" : "password"
+                    }
                     placeholder="Digite sua senha"
                     autoComplete="current-password"
                     required
+                    maxLength={72}
                     className="w-full rounded-md border border-gray-300 py-3 pl-10 pr-10 text-[15px] text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
                   />
 
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() =>
+                      setShowPassword(!showPassword)
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-[#1B3B32]"
                     aria-label={
-                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                      showPassword
+                        ? "Ocultar senha"
+                        : "Mostrar senha"
                     }
+                    aria-pressed={showPassword}
                   >
                     {showPassword ? (
                       <EyeOff size={18} />

@@ -15,8 +15,16 @@ import {
 } from "@/infrastructure/seguranca/limitador-tentativas-login";
 
 const credentialsSchema = z.object({
-  email: z.string().trim().email(),
-  password: z.string().min(1),
+  email: z
+    .string()
+    .trim()
+    .max(150)
+    .email(),
+
+  password: z
+    .string()
+    .min(1)
+    .max(72),
 });
 
 class MuitasTentativasLoginError extends CredentialsSignin {
