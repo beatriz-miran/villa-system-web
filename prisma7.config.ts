@@ -7,8 +7,11 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Direct (non-pooled) connection: the Prisma CLI (migrate/studio) needs
+    // this instead of the pooled DATABASE_URL used by the app at runtime.
+    url: process.env["DIRECT_URL"],
   },
 });

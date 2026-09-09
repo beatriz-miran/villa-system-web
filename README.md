@@ -1,49 +1,281 @@
+# Villa System
 
-# 🐔 Villa System - Sistema de gestão para granjas  avícolas
+Sistema web desenvolvido para auxiliar a gestão de pequenas e médias granjas avícolas.
 
-Um sistema pensado para pequenas e médias granjas avícolas que pretende auxiliar e facilitar o dia-a-dia dos operários referente a administração da granja.
+O Villa System busca substituir anotações manuais por informações organizadas, facilitando o acompanhamento da produção, do manejo e das atividades da granja.
 
-### 🚀 Status do Projeto
-> 🚧 Em desenvolvimento
-## ✨ Features
+## Estado atual do projeto
 
-- Cadastro e manutenção de lotes de aves
-- Gerenciamento financeiro e de produtos
-- Gestão de insumos
-- Controle diário de atividades básicas (água, ração, vacinas, mortalidade, etc.) via aplicativo celular
+Atualmente, o sistema possui:
 
+- autenticação por e-mail e senha;
+- controle de acesso por perfil;
+- área administrativa;
+- área do operador;
+- cadastro, edição e listagem de usuários;
+- ativação e desativação de usuários;
+- proteção contra desativação do próprio usuário;
+- proteção para manter pelo menos um administrador ativo;
+- bloqueio temporário após várias tentativas incorretas de login;
+- catálogo de linhagens;
+- cadastro, edição e listagem de linhagens;
+- ativação e desativação de linhagens;
+- confirmação antes da desativação de uma linhagem;
+- cadastro de metas semanais de peso, consumo de ração e produtividade;
+- carga inicial dos tipos de ovo Branco e Marrom;
+- carga inicial da linhagem Hy-Line Brown com metas para 100 semanas;
+- tratamento de páginas inexistentes e erros inesperados;
+- endpoint para verificar a conexão com o banco de dados.
 
-## 💻 Instalação
+As funcionalidades específicas de lotes, manejo, produção, estoque e financeiro ainda estão em desenvolvimento.
 
-    Antes de começar, você vai precisar ter instalado em sua máquina:
+## Tecnologias utilizadas
 
-Instale o projeto utilizando npm:
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- Auth.js
+- Prisma ORM 7
+- MariaDB
+- Zod
+- bcryptjs
 
-```bash
-  npm install villa-system-web
-  cd villa-system-web
+## Requisitos
+
+Antes de executar o projeto, é necessário possuir:
+
+- Node.js 20 ou superior;
+- npm;
+- um banco MariaDB acessível;
+- Visual Studio Code ou outro editor de código.
+
+O desenvolvimento atual utiliza Node.js 22.
+
+## Instalação
+
+Abra o PowerShell na pasta do projeto e instale as dependências:
+
+```powershell
+npm install
 ```
 
-*   [Node.js](https://nodejs.org) (Versão 18.x ou superior)
-*   [NPM](https://npmjs.com) ou [Yarn](https://yarnpkg.com)
-*   [MySQL Server](https://mysql.com) 
-## 🛠️ Tecnologias Utilizadas
+## Variáveis de ambiente
 
-O ecossistema do projeto foi construído utilizando as seguintes tecnologias:
+O projeto utiliza duas variáveis:
 
-*   **React** — Biblioteca para construção da interface de usuário.
-*   **TypeScript** — Tipagem estática para maior segurança e produtividade.
-*   **Next.js** — Framework para renderização híbrida (SSR/SSG) e rotas de API.
-*   **MySQL** — Banco de dados relacional para armazenamento seguro dos dados de produção.
-*   **Prisma / Sequelize** *(Opcional - substitua se usar outro ORM)* — ORM para comunicação com o banco de dados.
+| Variável | Finalidade |
+| --- | --- |
+| `DATABASE_URL` | Endereço de conexão com o banco MariaDB |
+| `AUTH_SECRET` | Chave utilizada para proteger a autenticação |
 
-## Autoras
+Crie o arquivo `.env` a partir do exemplo:
 
-- [@beatriz-miran](https://www.github.com/beatriz-miran)
-- [@GiIsis](https://www.github.com/GiIsis)
+```powershell
+Copy-Item .\.env.example .\.env
+```
 
-## Licença
+Depois, abra o arquivo:
 
+```powershell
+code .\.env
+```
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Exemplo de configuração:
 
+```dotenv
+DATABASE_URL="mysql://usuario:senha@localhost:3306/nome_do_banco"
+AUTH_SECRET="sua-chave-secreta"
+```
+
+Para gerar uma chave segura para `AUTH_SECRET`, execute:
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"
+```
+
+Copie o resultado para o `.env`.
+
+Nunca publique o arquivo `.env` e nunca coloque senhas verdadeiras no `.env.example`.
+
+## Banco de dados
+
+O banco informado em `DATABASE_URL` deve existir e possuir a estrutura representada em:
+
+```text
+prisma/schema.prisma
+```
+
+Valide o schema:
+
+```powershell
+npx prisma validate
+```
+
+Gere o Prisma Client:
+
+```powershell
+npx prisma generate --no-hints
+```
+
+Para verificar a conexão durante o desenvolvimento, inicie o sistema e acesse:
+
+```text
+http://localhost:3000/api/health/database
+```
+
+O resultado esperado é:
+
+```json
+{
+  "status": "ok",
+  "database": "connected"
+}
+```
+
+## Carga inicial de dados
+
+O projeto possui uma seed em:
+
+```text
+prisma/seed.ts
+```
+
+Ela cadastra ou reaproveita:
+
+- o tipo de ovo Branco;
+- o tipo de ovo Marrom;
+- a linhagem Hy-Line Brown;
+- 100 semanas de metas de peso, consumo de ração e produtividade para sistema alternativo ou livre.
+
+Para executar a seed no banco configurado no seu arquivo `.env`, utilize:
+
+```powershell
+npm run seed
+```
+
+A seed pode ser executada novamente sem criar registros duplicados.
+
+Os dados são inseridos somente no banco indicado pela variável `DATABASE_URL` do computador em que o comando for executado. Fazer `git pull` não executa a seed automaticamente.
+
+## Executar em desenvolvimento
+
+```powershell
+npm run dev
+```
+
+Abra no navegador:
+
+```text
+http://localhost:3000
+```
+
+## Validações do projeto
+
+Verificar o código com o ESLint:
+
+```powershell
+npm run lint
+```
+
+Criar a compilação de produção:
+
+```powershell
+npm run build
+```
+
+O processo de build gera o Prisma Client automaticamente antes de compilar o projeto.
+
+Verificar vulnerabilidades conhecidas:
+
+```powershell
+npm audit
+```
+
+Não utilize `npm audit fix --force` sem analisar as mudanças, pois ele pode instalar versões incompatíveis.
+
+## Rotas principais
+
+| Rota | Descrição |
+| --- | --- |
+| `/login` | Acesso ao sistema |
+| `/admin` | Área do administrador |
+| `/admin/usuarios` | Gerenciamento de usuários |
+| `/admin/usuarios/novo` | Cadastro de usuário |
+| `/admin/usuarios/[id]/editar` | Edição de usuário |
+| `/admin/linhagens` | Gerenciamento de linhagens |
+| `/admin/linhagens/novo` | Cadastro de linhagem |
+| `/admin/linhagens/[id]/editar` | Edição de linhagem e metas semanais |
+| `/operador` | Área do operador |
+| `/api/health/database` | Verificação da conexão com o banco |
+| `/api/admin/usuarios` | Consulta administrativa de usuários |
+
+## Organização do código
+
+```text
+app/
+  Páginas, layouts, componentes, ações e rotas da API
+
+application/
+  Regras de aplicação, autorizações e operações de usuários e linhagens
+
+infrastructure/
+  Conexão com o banco, repositórios e recursos de segurança
+
+prisma/
+  Schema do banco de dados e carga inicial de dados
+
+public/
+  Imagens e arquivos públicos
+
+types/
+  Tipagens adicionais do projeto
+```
+
+## Segurança implementada
+
+O projeto possui:
+
+- senhas armazenadas com hash bcrypt;
+- validação de dados com Zod;
+- sessões baseadas em JWT;
+- verificação do usuário diretamente no banco;
+- bloqueio de usuários inativos;
+- separação entre administrador e operador;
+- proteção das páginas e ações administrativas;
+- limitação de tentativas incorretas de login;
+- mensagens genéricas para credenciais inválidas;
+- tratamento de erros de banco sem exposição de detalhes internos;
+- proteção das operações administrativas de usuários e linhagens.
+
+## Limitações conhecidas
+
+### Limitação de tentativas de login
+
+A contagem de tentativas é mantida na memória do servidor. Ela é reiniciada quando o processo é encerrado e não é compartilhada entre vários servidores.
+
+Antes de uma implantação com múltiplas instâncias, essa proteção deverá utilizar um armazenamento compartilhado, como Redis ou banco de dados.
+
+### Dependência interna do Prisma
+
+O `npm audit` ainda pode informar uma vulnerabilidade na cadeia:
+
+```text
+deepmerge-ts → @prisma/config → prisma
+```
+
+A correção automática disponível pode instalar versões incompatíveis. O projeto aguarda uma atualização oficialmente compatível e não utiliza `npm audit fix --force` sem análise.
+
+## Perfis de acesso
+
+### Administrador
+
+Responsável pelas configurações administrativas e pelo gerenciamento de usuários e linhagens.
+
+### Operador
+
+Responsável pelas atividades operacionais da granja, conforme os módulos forem implementados.
+
+## Projeto acadêmico
+
+Este projeto está sendo desenvolvido como Trabalho de Conclusão de Curso na área de Análise e Desenvolvimento de Sistemas.
