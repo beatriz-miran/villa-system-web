@@ -107,11 +107,17 @@ export async function atualizarStatusGalpao(
   });
 }
 
-export async function existeLoteAtivoNoGalpao(id: number) {
+export async function existeLoteAtivoNoGalpao(
+  id: number,
+  ignorarLoteId?: number
+) {
   const lote = await prisma.lote_aves.findFirst({
     where: {
       gal_id: id,
       lta_status: "ATIVO",
+      ...(ignorarLoteId
+        ? { lta_id: { not: ignorarLoteId } }
+        : {}),
     },
     select: {
       lta_id: true,
