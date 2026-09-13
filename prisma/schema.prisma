@@ -188,12 +188,29 @@ model linhagem {
   tov_id                   Int
   created_at               DateTime?                  @default(now()) @db.Timestamp(0)
   updated_at               DateTime?                  @default(now()) @db.Timestamp(0)
+  cartilhas                cartilha_linhagem[]
   cronograma_padrao_manejo cronograma_padrao_manejo[]
   tipo_ovo                 tipo_ovo                   @relation(fields: [tov_id], references: [tov_id], onUpdate: NoAction, map: "fk_linhagem_tipo_ovo")
   lote_aves                lote_aves[]
   meta_linhagem_semanal    meta_linhagem_semanal[]
 
   @@index([tov_id], map: "idx_fk_linhagem_tipo_ovo")
+}
+
+model cartilha_linhagem {
+  ctl_id      Int                           @id @default(autoincrement())
+  ctl_titulo  String                        @db.VarChar(150)
+  ctl_fonte   String                        @db.VarChar(150)
+  ctl_sistema cartilha_linhagem_ctl_sistema @default(GERAL)
+  ctl_edicao  String?                       @db.VarChar(100)
+  ctl_url     String                        @db.VarChar(2048)
+  lin_id      Int
+  created_at  DateTime                      @default(now()) @db.Timestamp(0)
+  updated_at  DateTime                      @default(now()) @db.Timestamp(0)
+  linhagem    linhagem                      @relation(fields: [lin_id], references: [lin_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cartilha_linhagem")
+
+  @@unique([lin_id, ctl_url], map: "uq_cartilha_linhagem_url")
+  @@index([lin_id], map: "idx_cartilha_linhagem")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -692,4 +709,12 @@ enum movimento_insumo_mvi_status_registro {
 enum fornecedor_for_status {
   ATIVO
   INATIVO
+}
+
+enum cartilha_linhagem_ctl_sistema {
+  CAGE_FREE
+  CONVENCIONAL
+  FREE_RANGE
+  GERAL
+  SISTEMAS_ALTERNATIVOS
 }

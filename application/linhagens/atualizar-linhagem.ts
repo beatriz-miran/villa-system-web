@@ -9,6 +9,10 @@ import {
 import { buscarTipoOvoPorId } from "@/infrastructure/repositories/tipo-ovo-repository";
 
 import {
+  cartilhasLinhagemSchema,
+  existemUrlsCartilhasDuplicadas,
+} from "./cartilha-linhagem-schema";
+import {
   existemSemanasDuplicadas,
   metaLinhagemSchema,
 } from "./meta-linhagem-schema";
@@ -32,11 +36,15 @@ const atualizarLinhagemSchema = z.object({
     .optional(),
 
   tipoOvoId: z
-    .number({ error: "Selecione um tipo de ovo válido." })
+    .number({
+      error: "Selecione um tipo de ovo válido.",
+    })
     .int()
     .positive("Selecione um tipo de ovo válido."),
 
   metas: z.array(metaLinhagemSchema).default([]),
+
+  cartilhas: cartilhasLinhagemSchema.default([]),
 });
 
 export type AtualizarLinhagemInput = z.infer<
@@ -72,12 +80,21 @@ export async function atualizarLinhagem(
     descricao,
     tipoOvoId,
     metas,
+    cartilhas,
   } = validacao.data;
 
   if (existemSemanasDuplicadas(metas)) {
     return {
       sucesso: false,
       mensagem: "Não é possível repetir a mesma semana nas metas.",
+    };
+  }
+
+  if (existemUrlsCartilhasDuplicadas(cartilhas)) {
+    return {
+      sucesso: false,
+      mensagem:
+        "Não é possível cadastrar a mesma URL de cartilha duas vezes.",
     };
   }
 
@@ -118,6 +135,13 @@ export async function atualizarLinhagem(
       descricao: descricao || null,
       tipoOvoId,
       metas,
+      cartilhas: cartilhas.map((cartilha) => ({
+        titulo: cartilha.titulo,
+        fonte: cartilha.fonte,
+        sistema: cartilha.sistema,
+        edicao: cartilha.edicao || null,
+        url: cartilha.url,
+      })),
     });
 
     return {
@@ -127,7 +151,8 @@ export async function atualizarLinhagem(
     if (erroPrismaTemCodigo(error, "P2002")) {
       return {
         sucesso: false,
-        mensagem: "Já existe outra linhagem cadastrada com este nome.",
+        mensagem:
+          "Já existe uma linhagem com este nome ou uma cartilha repetida para esta linhagem.",
       };
     }
 
