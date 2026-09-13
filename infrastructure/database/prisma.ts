@@ -1,15 +1,16 @@
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../../generated/prisma/client";
 
-const databaseUrl = new URL(process.env.DATABASE_URL!);
+const databaseUrl = process.env.DATABASE_URL;
 
-const adapter = new PrismaMariaDb({
-  host: databaseUrl.hostname,
-  port: Number(databaseUrl.port || 3306),
-  user: decodeURIComponent(databaseUrl.username),
-  password: decodeURIComponent(databaseUrl.password),
-  database: databaseUrl.pathname.replace("/", ""),
-  connectionLimit: 5,
+if (!databaseUrl) {
+  throw new Error(
+    "A variável de ambiente DATABASE_URL não foi configurada.",
+  );
+}
+
+const adapter = new PrismaNeon({
+  connectionString: databaseUrl,
 });
 
 const globalForPrisma = globalThis as unknown as {

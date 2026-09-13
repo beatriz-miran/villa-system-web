@@ -14,6 +14,17 @@ const tiposOvo = [
   },
 ];
 
+const categoriasFornecedor = [
+  "Aves",
+  "Rações e suplementos",
+  "Medicamentos e vacinas",
+  "Embalagens",
+  "Equipamentos e manutenção",
+  "Higiene e biossegurança",
+  "Serviços",
+  "Outros",
+];
+
 // Fonte: Hy-Line Brown Commercial Layers - Alternative Systems,
 // International Standards, maio de 2026.
 // Cada meta representa o ponto medio entre os limites inferior e superior
@@ -125,6 +136,18 @@ const descricaoHyLineBrown =
   "Poedeira comercial de ovos marrons para sistemas alternativos, livres ou caipiras. Metas baseadas no guia internacional Hy-Line de maio de 2026.";
 
 async function executarSeed() {
+  for (const categoria of categoriasFornecedor) {
+    await prisma.categoria_fornecedor.upsert({
+      where: {
+        ctf_descricao: categoria,
+      },
+      update: {},
+      create: {
+        ctf_descricao: categoria,
+      },
+    });
+  }
+
   for (const tipoOvo of tiposOvo) {
     await prisma.tipo_ovo.upsert({
       where: {
@@ -150,7 +173,10 @@ async function executarSeed() {
     where: {
       lin_nome: "Hy-Line Brown",
     },
-    update: {},
+    update: {
+      lin_descricao: descricaoHyLineBrown,
+      tov_id: tipoOvoMarrom.tov_id,
+    },
     create: {
       lin_nome: "Hy-Line Brown",
       lin_descricao: descricaoHyLineBrown,
@@ -169,7 +195,12 @@ async function executarSeed() {
           mls_semana: meta.semana,
         },
       },
-      update: {},
+      update: {
+        mls_peso_meta_gramas: meta.pesoMetaGramas,
+        mls_consumo_meta_gramas: meta.consumoMetaGramas,
+        mls_produtividade_meta_percentual:
+          meta.produtividadeMetaPercentual,
+      },
       create: {
         lin_id: hyLineBrown.lin_id,
         mls_semana: meta.semana,
@@ -200,15 +231,18 @@ async function executarSeed() {
     );
   }
 
+  console.log(
+    `${categoriasFornecedor.length} categorias de fornecedor cadastradas com sucesso.`,
+  );
   console.log("Tipos de ovo Branco e Marrom cadastrados com sucesso.");
   console.log(
-    `Hy-Line Brown cadastrada com ${quantidadeMetasCadastradas} metas semanais para sistema alternativo.`
+    `Hy-Line Brown cadastrada com ${quantidadeMetasCadastradas} metas semanais para sistema alternativo.`,
   );
 }
 
 executarSeed()
   .catch((erro) => {
-    console.error("Não foi possível cadastrar os tipos de ovo:", erro);
+    console.error("Não foi possível executar a seed:", erro);
     process.exitCode = 1;
   })
   .finally(async () => {
