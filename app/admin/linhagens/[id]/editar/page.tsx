@@ -38,7 +38,8 @@ export default async function EditarLinhagemPage({
         </h1>
 
         <p className="mt-1 text-sm text-gray-500">
-          Atualize os dados cadastrais e as metas semanais da linhagem.
+          Atualize os dados cadastrais, cartilhas e metas semanais da
+          linhagem.
         </p>
 
         <section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
@@ -64,6 +65,14 @@ export default async function EditarLinhagemPage({
                   meta.mls_produtividade_meta_percentual === null
                     ? null
                     : Number(meta.mls_produtividade_meta_percentual),
+              })),
+              cartilhas: linhagem.cartilhas.map((cartilha) => ({
+                ctl_id: cartilha.ctl_id,
+                ctl_titulo: cartilha.ctl_titulo,
+                ctl_fonte: cartilha.ctl_fonte,
+                ctl_sistema: cartilha.ctl_sistema,
+                ctl_edicao: cartilha.ctl_edicao,
+                ctl_url: cartilha.ctl_url,
               })),
             }}
           />

@@ -1,3 +1,7 @@
+import type {
+  cartilha_linhagem_ctl_sistema,
+} from "@/generated/prisma/client";
+
 import { prisma } from "../database/prisma";
 
 type MetaLinhagemDados = {
@@ -7,19 +11,23 @@ type MetaLinhagemDados = {
   produtividadeMetaPercentual: number | null;
 };
 
+type CartilhaLinhagemDados = {
+  titulo: string;
+  fonte: string;
+  sistema: cartilha_linhagem_ctl_sistema;
+  edicao: string | null;
+  url: string;
+};
+
 type CriarLinhagemDados = {
   nome: string;
   descricao: string | null;
   tipoOvoId: number;
   metas: MetaLinhagemDados[];
+  cartilhas: CartilhaLinhagemDados[];
 };
 
-type AtualizarLinhagemDados = {
-  nome: string;
-  descricao: string | null;
-  tipoOvoId: number;
-  metas: MetaLinhagemDados[];
-};
+type AtualizarLinhagemDados = CriarLinhagemDados;
 
 type LinhagemStatus = "ATIVO" | "INATIVO";
 
@@ -65,6 +73,20 @@ export async function buscarLinhagemPorId(id: number) {
     },
     select: {
       ...selecaoLinhagem,
+      cartilhas: {
+        select: {
+          ctl_id: true,
+          ctl_titulo: true,
+          ctl_fonte: true,
+          ctl_sistema: true,
+          ctl_edicao: true,
+          ctl_url: true,
+          lin_id: true,
+        },
+        orderBy: {
+          ctl_titulo: "asc",
+        },
+      },
       meta_linhagem_semanal: {
         select: {
           mls_id: true,
@@ -82,9 +104,12 @@ export async function buscarLinhagemPorId(id: number) {
 }
 
 export async function buscarLinhagemPorNome(nome: string) {
-  return prisma.linhagem.findUnique({
+  return prisma.linhagem.findFirst({
     where: {
-      lin_nome: nome,
+      lin_nome: {
+        equals: nome,
+        mode: "insensitive",
+      },
     },
     select: {
       lin_id: true,
@@ -92,21 +117,35 @@ export async function buscarLinhagemPorNome(nome: string) {
   });
 }
 
-export async function criarLinhagem(dados: CriarLinhagemDados) {
+export async function criarLinhagem(
+  dados: CriarLinhagemDados
+) {
   return prisma.linhagem.create({
     data: {
       lin_nome: dados.nome,
       lin_descricao: dados.descricao,
       lin_status: "ATIVO",
       tipo_ovo: {
-        connect: { tov_id: dados.tipoOvoId },
+        connect: {
+          tov_id: dados.tipoOvoId,
+        },
+      },
+      cartilhas: {
+        create: dados.cartilhas.map((cartilha) => ({
+          ctl_titulo: cartilha.titulo,
+          ctl_fonte: cartilha.fonte,
+          ctl_sistema: cartilha.sistema,
+          ctl_edicao: cartilha.edicao,
+          ctl_url: cartilha.url,
+        })),
       },
       meta_linhagem_semanal: {
         create: dados.metas.map((meta) => ({
           mls_semana: meta.semana,
           mls_peso_meta_gramas: meta.pesoMetaGramas,
           mls_consumo_meta_gramas: meta.consumoMetaGramas,
-          mls_produtividade_meta_percentual: meta.produtividadeMetaPercentual,
+          mls_produtividade_meta_percentual:
+            meta.produtividadeMetaPercentual,
         })),
       },
     },
@@ -120,12 +159,17 @@ export async function atualizarLinhagem(
 ) {
   return prisma.$transaction(async (tx) => {
     const linhagemAtualizada = await tx.linhagem.update({
-      where: { lin_id: id },
+      where: {
+        lin_id: id,
+      },
       data: {
         lin_nome: dados.nome,
         lin_descricao: dados.descricao,
+        updated_at: new Date(),
         tipo_ovo: {
-          connect: { tov_id: dados.tipoOvoId },
+          connect: {
+            tov_id: dados.tipoOvoId,
+          },
         },
       },
       select: selecaoLinhagem,
@@ -164,16 +208,35 @@ export async function atualizarLinhagem(
               meta.produtividadeMetaPercentual,
           },
           create: {
+            lin_id: id,
             mls_semana: meta.semana,
             mls_peso_meta_gramas: meta.pesoMetaGramas,
             mls_consumo_meta_gramas: meta.consumoMetaGramas,
             mls_produtividade_meta_percentual:
               meta.produtividadeMetaPercentual,
-            lin_id: id,
           },
         })
       )
     );
+
+    await tx.cartilha_linhagem.deleteMany({
+      where: {
+        lin_id: id,
+      },
+    });
+
+    if (dados.cartilhas.length > 0) {
+      await tx.cartilha_linhagem.createMany({
+        data: dados.cartilhas.map((cartilha) => ({
+          ctl_titulo: cartilha.titulo,
+          ctl_fonte: cartilha.fonte,
+          ctl_sistema: cartilha.sistema,
+          ctl_edicao: cartilha.edicao,
+          ctl_url: cartilha.url,
+          lin_id: id,
+        })),
+      });
+    }
 
     return linhagemAtualizada;
   });
@@ -189,6 +252,7 @@ export async function atualizarStatusLinhagem(
     },
     data: {
       lin_status: status,
+      updated_at: new Date(),
     },
     select: selecaoLinhagem,
   });

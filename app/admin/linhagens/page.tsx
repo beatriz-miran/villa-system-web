@@ -40,7 +40,6 @@ export default async function LinhagensPage() {
           </div>
         ) : (
           <>
-            {/* Mobile */}
             <div className="space-y-3 md:hidden">
               {linhagens.map((linhagem) => (
                 <article
@@ -69,7 +68,14 @@ export default async function LinhagensPage() {
                     </span>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-4 border-t border-gray-100 pt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">
+                    <Link
+                      href={`/admin/linhagens/${linhagem.lin_id}`}
+                      className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                    >
+                      Visualizar
+                    </Link>
+
                     <Link
                       href={`/admin/linhagens/${linhagem.lin_id}/editar`}
                       className="text-sm font-medium text-[#1B3B32] transition hover:underline"
@@ -86,7 +92,6 @@ export default async function LinhagensPage() {
               ))}
             </div>
 
-            {/* Tablet e desktop */}
             <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -135,6 +140,13 @@ export default async function LinhagensPage() {
 
                         <td className="px-5 py-4">
                           <div className="flex items-center justify-end gap-4">
+                            <Link
+                              href={`/admin/linhagens/${linhagem.lin_id}`}
+                              className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                            >
+                              Visualizar
+                            </Link>
+
                             <Link
                               href={`/admin/linhagens/${linhagem.lin_id}/editar`}
                               className="text-sm font-medium text-[#1B3B32] transition hover:underline"

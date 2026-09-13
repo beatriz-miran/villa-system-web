@@ -9,12 +9,25 @@ import {
   criarLinhagemAction,
   CriarLinhagemActionState,
 } from "@/app/admin/linhagens/actions";
+import {
+  sistemaCartilhaLabel,
+  sistemasCartilhaValores,
+  type SistemaCartilha,
+} from "@/application/linhagens/cartilha-linhagem-schema";
 
 type MetaLinha = {
   semana: string;
   pesoMetaGramas: string;
   consumoMetaGramas: string;
   produtividadeMetaPercentual: string;
+};
+
+type CartilhaLinha = {
+  titulo: string;
+  fonte: string;
+  sistema: SistemaCartilha | "";
+  edicao: string;
+  url: string;
 };
 
 type LinhagemFormProps = {
@@ -38,6 +51,14 @@ type LinhagemFormProps = {
           pesoMetaGramas: number | null;
           consumoMetaGramas: number | null;
           produtividadeMetaPercentual: number | null;
+        }[];
+        cartilhas: {
+          ctl_id: number;
+          ctl_titulo: string;
+          ctl_fonte: string;
+          ctl_sistema: SistemaCartilha;
+          ctl_edicao: string | null;
+          ctl_url: string;
         }[];
       };
     }
@@ -64,6 +85,22 @@ function metaParaLinha(meta: {
       meta.produtividadeMetaPercentual === null
         ? ""
         : String(meta.produtividadeMetaPercentual),
+  };
+}
+
+function cartilhaParaLinha(cartilha: {
+  ctl_titulo: string;
+  ctl_fonte: string;
+  ctl_sistema: SistemaCartilha;
+  ctl_edicao: string | null;
+  ctl_url: string;
+}): CartilhaLinha {
+  return {
+    titulo: cartilha.ctl_titulo,
+    fonte: cartilha.ctl_fonte,
+    sistema: cartilha.ctl_sistema,
+    edicao: cartilha.ctl_edicao ?? "",
+    url: cartilha.ctl_url,
   };
 }
 
@@ -99,6 +136,12 @@ export default function LinhagemForm(props: LinhagemFormProps) {
     modo === "editar" ? props.linhagem.metas.map(metaParaLinha) : []
   );
 
+  const [cartilhas, setCartilhas] = useState<CartilhaLinha[]>(
+    modo === "editar"
+      ? props.linhagem.cartilhas.map(cartilhaParaLinha)
+      : []
+  );
+
   function adicionarMeta() {
     setMetas((atual) => [
       ...atual,
@@ -123,6 +166,37 @@ export default function LinhagemForm(props: LinhagemFormProps) {
     setMetas((atual) =>
       atual.map((meta, i) =>
         i === indice ? { ...meta, [campo]: valor } : meta
+      )
+    );
+  }
+
+  function adicionarCartilha() {
+    setCartilhas((atual) => [
+      ...atual,
+      {
+        titulo: "",
+        fonte: "",
+        sistema: "",
+        edicao: "",
+        url: "",
+      },
+    ]);
+  }
+
+  function removerCartilha(indice: number) {
+    setCartilhas((atual) =>
+      atual.filter((_, i) => i !== indice)
+    );
+  }
+
+  function atualizarCartilha(
+    indice: number,
+    campo: keyof CartilhaLinha,
+    valor: string
+  ) {
+    setCartilhas((atual) =>
+      atual.map((cartilha, i) =>
+        i === indice ? { ...cartilha, [campo]: valor } : cartilha
       )
     );
   }
@@ -155,6 +229,12 @@ export default function LinhagemForm(props: LinhagemFormProps) {
         type="hidden"
         name="metas"
         value={JSON.stringify(metasParaEnvio)}
+      />
+
+      <input
+        type="hidden"
+        name="cartilhas"
+        value={JSON.stringify(cartilhas)}
       />
 
       <div>
@@ -241,6 +321,188 @@ export default function LinhagemForm(props: LinhagemFormProps) {
             Nenhum tipo de ovo está cadastrado. Cadastre os tipos de ovo
             antes de criar uma linhagem.
           </p>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-700">
+              Cartilhas técnicas
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              Informe links HTTPS oficiais para consulta dentro do sistema.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={adicionarCartilha}
+            className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+          >
+            + Adicionar cartilha
+          </button>
+        </div>
+
+        {cartilhas.length === 0 ? (
+          <p className="mt-2 text-sm text-gray-500">
+            Nenhuma cartilha cadastrada para esta linhagem.
+          </p>
+        ) : (
+          <div className="mt-3 space-y-4">
+            {cartilhas.map((cartilha, indice) => (
+              <div
+                key={indice}
+                className="rounded-md border border-gray-200 p-3"
+              >
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor={`cartilha-titulo-${indice}`}
+                      className="text-xs font-medium text-gray-500"
+                    >
+                      Título
+                    </label>
+
+                    <input
+                      id={`cartilha-titulo-${indice}`}
+                      type="text"
+                      required
+                      maxLength={150}
+                      value={cartilha.titulo}
+                      onChange={(event) =>
+                        atualizarCartilha(
+                          indice,
+                          "titulo",
+                          event.target.value
+                        )
+                      }
+                      placeholder="Ex.: Guia de manejo"
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor={`cartilha-fonte-${indice}`}
+                      className="text-xs font-medium text-gray-500"
+                    >
+                      Fonte ou fabricante
+                    </label>
+
+                    <input
+                      id={`cartilha-fonte-${indice}`}
+                      type="text"
+                      required
+                      maxLength={150}
+                      value={cartilha.fonte}
+                      onChange={(event) =>
+                        atualizarCartilha(
+                          indice,
+                          "fonte",
+                          event.target.value
+                        )
+                      }
+                      placeholder="Ex.: Hy-Line"
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor={`cartilha-sistema-${indice}`}
+                      className="text-xs font-medium text-gray-500"
+                    >
+                      Sistema de criação
+                    </label>
+
+                    <select
+                      id={`cartilha-sistema-${indice}`}
+                      required
+                      value={cartilha.sistema}
+                      onChange={(event) =>
+                        atualizarCartilha(
+                          indice,
+                          "sistema",
+                          event.target.value
+                        )
+                      }
+                      className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
+                    >
+                      <option value="" disabled>
+                        Selecione um sistema
+                      </option>
+
+                      {sistemasCartilhaValores.map((sistema) => (
+                        <option key={sistema} value={sistema}>
+                          {sistemaCartilhaLabel[sistema]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor={`cartilha-edicao-${indice}`}
+                      className="text-xs font-medium text-gray-500"
+                    >
+                      Edição ou versão (opcional)
+                    </label>
+
+                    <input
+                      id={`cartilha-edicao-${indice}`}
+                      type="text"
+                      maxLength={100}
+                      value={cartilha.edicao}
+                      onChange={(event) =>
+                        atualizarCartilha(
+                          indice,
+                          "edicao",
+                          event.target.value
+                        )
+                      }
+                      placeholder="Ex.: 2024"
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor={`cartilha-url-${indice}`}
+                      className="text-xs font-medium text-gray-500"
+                    >
+                      URL oficial HTTPS
+                    </label>
+
+                    <input
+                      id={`cartilha-url-${indice}`}
+                      type="url"
+                      required
+                      maxLength={2048}
+                      value={cartilha.url}
+                      onChange={(event) =>
+                        atualizarCartilha(
+                          indice,
+                          "url",
+                          event.target.value
+                        )
+                      }
+                      placeholder="https://..."
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => removerCartilha(indice)}
+                  className="mt-3 text-sm font-medium text-red-600 transition hover:underline"
+                >
+                  Remover cartilha
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

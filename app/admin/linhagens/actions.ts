@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { alterarStatusLinhagem } from "@/application/linhagens/alterar-status-linhagem";
 import { atualizarLinhagem } from "@/application/linhagens/atualizar-linhagem";
 import { criarLinhagem } from "@/application/linhagens/criar-linhagem";
+import type { CartilhaLinhagemInput } from "@/application/linhagens/cartilha-linhagem-schema";
 import type { MetaLinhagemInput } from "@/application/linhagens/meta-linhagem-schema";
 
 export type CriarLinhagemActionState = {
@@ -31,6 +32,16 @@ type ExtrairMetasResultado =
       mensagem: string;
     };
 
+type ExtrairCartilhasResultado =
+  | {
+      sucesso: true;
+      cartilhas: CartilhaLinhagemInput[];
+    }
+  | {
+      sucesso: false;
+      mensagem: string;
+    };
+
 function extrairMetas(formData: FormData): ExtrairMetasResultado {
   const campoMetas = formData.get("metas");
 
@@ -41,12 +52,10 @@ function extrairMetas(formData: FormData): ExtrairMetasResultado {
     };
   }
 
-  const bruto = campoMetas;
-
   let dados: unknown;
 
   try {
-    dados = JSON.parse(bruto);
+    dados = JSON.parse(campoMetas);
   } catch {
     return {
       sucesso: false,
@@ -84,6 +93,59 @@ function extrairMetas(formData: FormData): ExtrairMetasResultado {
   };
 }
 
+function extrairCartilhas(
+  formData: FormData
+): ExtrairCartilhasResultado {
+  const campoCartilhas = formData.get("cartilhas");
+
+  if (campoCartilhas === null || campoCartilhas === "") {
+    return {
+      sucesso: true,
+      cartilhas: [],
+    };
+  }
+
+  if (typeof campoCartilhas !== "string") {
+    return {
+      sucesso: false,
+      mensagem: "Os dados das cartilhas não foram enviados corretamente.",
+    };
+  }
+
+  let dados: unknown;
+
+  try {
+    dados = JSON.parse(campoCartilhas);
+  } catch {
+    return {
+      sucesso: false,
+      mensagem:
+        "Não foi possível ler as cartilhas. Atualize a página e tente novamente.",
+    };
+  }
+
+  if (!Array.isArray(dados)) {
+    return {
+      sucesso: false,
+      mensagem: "Os dados das cartilhas são inválidos.",
+    };
+  }
+
+  return {
+    sucesso: true,
+    cartilhas: dados.map((cartilha) => ({
+      titulo: String(cartilha?.titulo ?? ""),
+      fonte: String(cartilha?.fonte ?? ""),
+      sistema: String(cartilha?.sistema ?? ""),
+      edicao:
+        cartilha?.edicao === null || cartilha?.edicao === undefined
+          ? ""
+          : String(cartilha.edicao),
+      url: String(cartilha?.url ?? ""),
+    })) as CartilhaLinhagemInput[],
+  };
+}
+
 export async function criarLinhagemAction(
   _prevState: CriarLinhagemActionState,
   formData: FormData
@@ -110,11 +172,20 @@ export async function criarLinhagemAction(
     };
   }
 
+  const cartilhasResultado = extrairCartilhas(formData);
+
+  if (!cartilhasResultado.sucesso) {
+    return {
+      erro: cartilhasResultado.mensagem,
+    };
+  }
+
   const resultado = await criarLinhagem({
     nome: String(formData.get("nome") ?? ""),
     descricao: String(formData.get("descricao") ?? "") || undefined,
     tipoOvoId: Number(formData.get("tipoOvoId")),
     metas: metasResultado.metas,
+    cartilhas: cartilhasResultado.cartilhas,
   });
 
   if (!resultado.sucesso) {
@@ -153,6 +224,14 @@ export async function atualizarLinhagemAction(
     };
   }
 
+  const cartilhasResultado = extrairCartilhas(formData);
+
+  if (!cartilhasResultado.sucesso) {
+    return {
+      erro: cartilhasResultado.mensagem,
+    };
+  }
+
   const id = Number(formData.get("id"));
 
   const resultado = await atualizarLinhagem({
@@ -161,6 +240,7 @@ export async function atualizarLinhagemAction(
     descricao: String(formData.get("descricao") ?? "") || undefined,
     tipoOvoId: Number(formData.get("tipoOvoId")),
     metas: metasResultado.metas,
+    cartilhas: cartilhasResultado.cartilhas,
   });
 
   if (!resultado.sucesso) {
