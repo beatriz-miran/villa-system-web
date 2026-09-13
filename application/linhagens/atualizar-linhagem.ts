@@ -12,6 +12,7 @@ import {
   cartilhasLinhagemSchema,
   existemUrlsCartilhasDuplicadas,
 } from "./cartilha-linhagem-schema";
+import { imagemLinhagemSchema } from "./imagem-linhagem-schema";
 import {
   existemSemanasDuplicadas,
   metaLinhagemSchema,
@@ -34,6 +35,10 @@ const atualizarLinhagemSchema = z.object({
     .trim()
     .max(255, "A descrição deve possuir no máximo 255 caracteres.")
     .optional(),
+
+  imagemGalinhaUrl: imagemLinhagemSchema,
+
+  imagemOvoUrl: imagemLinhagemSchema,
 
   tipoOvoId: z
     .number({
@@ -78,6 +83,8 @@ export async function atualizarLinhagem(
     id,
     nome,
     descricao,
+    imagemGalinhaUrl,
+    imagemOvoUrl,
     tipoOvoId,
     metas,
     cartilhas,
@@ -133,6 +140,8 @@ export async function atualizarLinhagem(
     await atualizarLinhagemRepository(id, {
       nome,
       descricao: descricao || null,
+      imagemGalinhaUrl: imagemGalinhaUrl || null,
+      imagemOvoUrl: imagemOvoUrl || null,
       tipoOvoId,
       metas,
       cartilhas: cartilhas.map((cartilha) => ({

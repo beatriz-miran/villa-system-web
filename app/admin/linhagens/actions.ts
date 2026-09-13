@@ -146,6 +146,21 @@ function extrairCartilhas(
   };
 }
 
+function extrairImagem(
+  formData: FormData,
+  campo: string
+): string | undefined {
+  const valor = formData.get(campo);
+
+  if (typeof valor !== "string") {
+    return undefined;
+  }
+
+  const valorNormalizado = valor.trim();
+
+  return valorNormalizado === "" ? undefined : valorNormalizado;
+}
+
 export async function criarLinhagemAction(
   _prevState: CriarLinhagemActionState,
   formData: FormData
@@ -183,6 +198,11 @@ export async function criarLinhagemAction(
   const resultado = await criarLinhagem({
     nome: String(formData.get("nome") ?? ""),
     descricao: String(formData.get("descricao") ?? "") || undefined,
+    imagemGalinhaUrl: extrairImagem(
+      formData,
+      "imagemGalinhaUrl"
+    ),
+    imagemOvoUrl: extrairImagem(formData, "imagemOvoUrl"),
     tipoOvoId: Number(formData.get("tipoOvoId")),
     metas: metasResultado.metas,
     cartilhas: cartilhasResultado.cartilhas,
@@ -238,6 +258,11 @@ export async function atualizarLinhagemAction(
     id,
     nome: String(formData.get("nome") ?? ""),
     descricao: String(formData.get("descricao") ?? "") || undefined,
+    imagemGalinhaUrl: extrairImagem(
+      formData,
+      "imagemGalinhaUrl"
+    ),
+    imagemOvoUrl: extrairImagem(formData, "imagemOvoUrl"),
     tipoOvoId: Number(formData.get("tipoOvoId")),
     metas: metasResultado.metas,
     cartilhas: cartilhasResultado.cartilhas,

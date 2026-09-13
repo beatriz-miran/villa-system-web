@@ -6,6 +6,8 @@ const hostsPermitidos = new Set([
   "www.hyline.com",
   "embrapa.br",
   "www.embrapa.br",
+  "lohmann-breeders.com",
+  "www.lohmann-breeders.com",
 ]);
 
 function hostEstaPermitido(hostname: string) {

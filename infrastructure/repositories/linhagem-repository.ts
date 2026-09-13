@@ -22,6 +22,8 @@ type CartilhaLinhagemDados = {
 type CriarLinhagemDados = {
   nome: string;
   descricao: string | null;
+  imagemGalinhaUrl?: string | null;
+  imagemOvoUrl?: string | null;
   tipoOvoId: number;
   metas: MetaLinhagemDados[];
   cartilhas: CartilhaLinhagemDados[];
@@ -31,10 +33,22 @@ type AtualizarLinhagemDados = CriarLinhagemDados;
 
 type LinhagemStatus = "ATIVO" | "INATIVO";
 
+type DecimalConvertivel = {
+  toString(): string;
+};
+
+function decimalParaNumero(
+  valor: DecimalConvertivel | null
+): number | null {
+  return valor === null ? null : Number(valor.toString());
+}
+
 const selecaoLinhagem = {
   lin_id: true,
   lin_nome: true,
   lin_descricao: true,
+  lin_imagem_galinha_url: true,
+  lin_imagem_ovo_url: true,
   lin_status: true,
   tov_id: true,
   tipo_ovo: {
@@ -124,6 +138,9 @@ export async function criarLinhagem(
     data: {
       lin_nome: dados.nome,
       lin_descricao: dados.descricao,
+      lin_imagem_galinha_url:
+        dados.imagemGalinhaUrl ?? null,
+      lin_imagem_ovo_url: dados.imagemOvoUrl ?? null,
       lin_status: "ATIVO",
       tipo_ovo: {
         connect: {
@@ -143,7 +160,8 @@ export async function criarLinhagem(
         create: dados.metas.map((meta) => ({
           mls_semana: meta.semana,
           mls_peso_meta_gramas: meta.pesoMetaGramas,
-          mls_consumo_meta_gramas: meta.consumoMetaGramas,
+          mls_consumo_meta_gramas:
+            meta.consumoMetaGramas,
           mls_produtividade_meta_percentual:
             meta.produtividadeMetaPercentual,
         })),
@@ -157,89 +175,149 @@ export async function atualizarLinhagem(
   id: number,
   dados: AtualizarLinhagemDados
 ) {
-  return prisma.$transaction(async (tx) => {
-    const linhagemAtualizada = await tx.linhagem.update({
-      where: {
-        lin_id: id,
-      },
-      data: {
-        lin_nome: dados.nome,
-        lin_descricao: dados.descricao,
-        updated_at: new Date(),
-        tipo_ovo: {
-          connect: {
-            tov_id: dados.tipoOvoId,
-          },
-        },
-      },
-      select: selecaoLinhagem,
-    });
-
-    const semanasInformadas = dados.metas.map(
-      (meta) => meta.semana
-    );
-
-    await tx.meta_linhagem_semanal.deleteMany({
-      where: {
-        lin_id: id,
-        ...(semanasInformadas.length > 0
-          ? {
-              mls_semana: {
-                notIn: semanasInformadas,
-              },
-            }
-          : {}),
-      },
-    });
-
-    await Promise.all(
-      dados.metas.map((meta) =>
-        tx.meta_linhagem_semanal.upsert({
+  return prisma.$transaction(
+    async (tx) => {
+      const metasAtuais =
+        await tx.meta_linhagem_semanal.findMany({
           where: {
-            lin_id_mls_semana: {
-              lin_id: id,
-              mls_semana: meta.semana,
+            lin_id: id,
+          },
+          select: {
+            mls_semana: true,
+            mls_peso_meta_gramas: true,
+            mls_consumo_meta_gramas: true,
+            mls_produtividade_meta_percentual: true,
+          },
+        });
+
+      const metasAtuaisPorSemana = new Map(
+        metasAtuais.map((meta) => [
+          meta.mls_semana,
+          meta,
+        ])
+      );
+
+      const metasParaSalvar = dados.metas.filter(
+        (meta) => {
+          const metaAtual = metasAtuaisPorSemana.get(
+            meta.semana
+          );
+
+          if (!metaAtual) {
+            return true;
+          }
+
+          return (
+            decimalParaNumero(
+              metaAtual.mls_peso_meta_gramas
+            ) !== meta.pesoMetaGramas ||
+            decimalParaNumero(
+              metaAtual.mls_consumo_meta_gramas
+            ) !== meta.consumoMetaGramas ||
+            decimalParaNumero(
+              metaAtual.mls_produtividade_meta_percentual
+            ) !== meta.produtividadeMetaPercentual
+          );
+        }
+      );
+
+      const linhagemAtualizada =
+        await tx.linhagem.update({
+          where: {
+            lin_id: id,
+          },
+          data: {
+            lin_nome: dados.nome,
+            lin_descricao: dados.descricao,
+            lin_imagem_galinha_url:
+              dados.imagemGalinhaUrl ?? null,
+            lin_imagem_ovo_url:
+              dados.imagemOvoUrl ?? null,
+            updated_at: new Date(),
+            tipo_ovo: {
+              connect: {
+                tov_id: dados.tipoOvoId,
+              },
             },
           },
-          update: {
-            mls_peso_meta_gramas: meta.pesoMetaGramas,
-            mls_consumo_meta_gramas: meta.consumoMetaGramas,
-            mls_produtividade_meta_percentual:
-              meta.produtividadeMetaPercentual,
-          },
-          create: {
-            lin_id: id,
-            mls_semana: meta.semana,
-            mls_peso_meta_gramas: meta.pesoMetaGramas,
-            mls_consumo_meta_gramas: meta.consumoMetaGramas,
-            mls_produtividade_meta_percentual:
-              meta.produtividadeMetaPercentual,
-          },
-        })
-      )
-    );
+          select: selecaoLinhagem,
+        });
 
-    await tx.cartilha_linhagem.deleteMany({
-      where: {
-        lin_id: id,
-      },
-    });
+      const semanasInformadas = dados.metas.map(
+        (meta) => meta.semana
+      );
 
-    if (dados.cartilhas.length > 0) {
-      await tx.cartilha_linhagem.createMany({
-        data: dados.cartilhas.map((cartilha) => ({
-          ctl_titulo: cartilha.titulo,
-          ctl_fonte: cartilha.fonte,
-          ctl_sistema: cartilha.sistema,
-          ctl_edicao: cartilha.edicao,
-          ctl_url: cartilha.url,
+      await tx.meta_linhagem_semanal.deleteMany({
+        where: {
           lin_id: id,
-        })),
+          ...(semanasInformadas.length > 0
+            ? {
+                mls_semana: {
+                  notIn: semanasInformadas,
+                },
+              }
+            : {}),
+        },
       });
-    }
 
-    return linhagemAtualizada;
-  });
+      await Promise.all(
+        metasParaSalvar.map((meta) =>
+          tx.meta_linhagem_semanal.upsert({
+            where: {
+              lin_id_mls_semana: {
+                lin_id: id,
+                mls_semana: meta.semana,
+              },
+            },
+            update: {
+              mls_peso_meta_gramas:
+                meta.pesoMetaGramas,
+              mls_consumo_meta_gramas:
+                meta.consumoMetaGramas,
+              mls_produtividade_meta_percentual:
+                meta.produtividadeMetaPercentual,
+              updated_at: new Date(),
+            },
+            create: {
+              lin_id: id,
+              mls_semana: meta.semana,
+              mls_peso_meta_gramas:
+                meta.pesoMetaGramas,
+              mls_consumo_meta_gramas:
+                meta.consumoMetaGramas,
+              mls_produtividade_meta_percentual:
+                meta.produtividadeMetaPercentual,
+            },
+          })
+        )
+      );
+
+      await tx.cartilha_linhagem.deleteMany({
+        where: {
+          lin_id: id,
+        },
+      });
+
+      if (dados.cartilhas.length > 0) {
+        await tx.cartilha_linhagem.createMany({
+          data: dados.cartilhas.map((cartilha) => ({
+            ctl_titulo: cartilha.titulo,
+            ctl_fonte: cartilha.fonte,
+            ctl_sistema: cartilha.sistema,
+            ctl_edicao: cartilha.edicao,
+            ctl_url: cartilha.url,
+            lin_id: id,
+          })),
+        });
+      }
+
+      return linhagemAtualizada;
+    },
+    {
+      maxWait: 10_000,
+      timeout: 30_000,
+    }
+  );
 }
 
 export async function atualizarStatusLinhagem(
