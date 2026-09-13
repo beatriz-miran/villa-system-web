@@ -1,11 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { buscarLinhagem } from "@/application/linhagens/buscar-linhagem";
 import {
   sistemaCartilhaLabel,
   type SistemaCartilha,
 } from "@/application/linhagens/cartilha-linhagem-schema";
-import { buscarLinhagem } from "@/application/linhagens/buscar-linhagem";
 
 type VisualizarLinhagemPageProps = {
   params: Promise<{
@@ -81,6 +82,7 @@ export default async function VisualizarLinhagemPage({
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Nome
               </dt>
+
               <dd className="mt-1 text-sm text-gray-900">
                 {linhagem.lin_nome}
               </dd>
@@ -90,6 +92,7 @@ export default async function VisualizarLinhagemPage({
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Tipo de ovo
               </dt>
+
               <dd className="mt-1 text-sm text-gray-900">
                 {linhagem.tipo_ovo.tov_nome}
               </dd>
@@ -99,11 +102,58 @@ export default async function VisualizarLinhagemPage({
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Descrição
               </dt>
+
               <dd className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
                 {linhagem.lin_descricao || "Nenhuma descrição informada."}
               </dd>
             </div>
           </dl>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+              <div className="border-b border-gray-200 bg-white px-3 py-2">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Galinha representante
+                </h3>
+              </div>
+
+              {linhagem.lin_imagem_galinha_url ? (
+                <Image
+                  src={linhagem.lin_imagem_galinha_url}
+                  alt={`Galinha da linhagem ${linhagem.lin_nome}`}
+                  width={640}
+                  height={480}
+                  className="h-48 w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-48 items-center justify-center px-4 text-center text-sm text-gray-500">
+                  Nenhuma imagem da galinha cadastrada.
+                </div>
+              )}
+            </div>
+
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+              <div className="border-b border-gray-200 bg-white px-3 py-2">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Ovos produzidos
+                </h3>
+              </div>
+
+              {linhagem.lin_imagem_ovo_url ? (
+                <Image
+                  src={linhagem.lin_imagem_ovo_url}
+                  alt={`Ovos produzidos pela linhagem ${linhagem.lin_nome}`}
+                  width={640}
+                  height={480}
+                  className="h-48 w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-48 items-center justify-center px-4 text-center text-sm text-gray-500">
+                  Nenhuma imagem dos ovos cadastrada.
+                </div>
+              )}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
@@ -116,19 +166,22 @@ export default async function VisualizarLinhagemPage({
               Nenhuma meta semanal cadastrada.
             </p>
           ) : (
-            <div className="mt-4 overflow-x-auto">
+            <div className="mt-4 max-h-[520px] overflow-x-auto overflow-y-auto rounded-md border border-gray-200">
               <table className="w-full min-w-[620px] text-left">
-                <thead className="border-b border-gray-200 bg-gray-50">
+                <thead className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50">
                   <tr>
                     <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Semana
                     </th>
+
                     <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Peso (g)
                     </th>
+
                     <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Consumo (g/ave/dia)
                     </th>
+
                     <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Produtividade (%)
                     </th>
@@ -141,16 +194,19 @@ export default async function VisualizarLinhagemPage({
                       <td className="px-3 py-2 text-sm font-medium text-gray-900">
                         {meta.mls_semana}
                       </td>
+
                       <td className="px-3 py-2 text-sm text-gray-600">
                         {meta.mls_peso_meta_gramas === null
                           ? "—"
                           : String(meta.mls_peso_meta_gramas)}
                       </td>
+
                       <td className="px-3 py-2 text-sm text-gray-600">
                         {meta.mls_consumo_meta_gramas === null
                           ? "—"
                           : String(meta.mls_consumo_meta_gramas)}
                       </td>
+
                       <td className="px-3 py-2 text-sm text-gray-600">
                         {meta.mls_produtividade_meta_percentual === null
                           ? "—"
@@ -186,7 +242,7 @@ export default async function VisualizarLinhagemPage({
               <details
                 key={cartilha.ctl_id}
                 open={indice === 0}
-                className="overflow-hidden rounded-lg border border-gray-200"
+                className="group overflow-hidden rounded-lg border border-gray-200"
               >
                 <summary className="cursor-pointer list-none px-4 py-3 transition hover:bg-gray-50">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -209,7 +265,13 @@ export default async function VisualizarLinhagemPage({
                     </div>
 
                     <span className="text-sm font-medium text-[#1B3B32]">
-                      Abrir visualização
+                      <span className="group-open:hidden">
+                        Abrir visualização
+                      </span>
+
+                      <span className="hidden group-open:inline">
+                        Fechar visualização
+                      </span>
                     </span>
                   </div>
                 </summary>
