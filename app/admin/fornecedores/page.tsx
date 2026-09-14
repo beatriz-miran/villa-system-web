@@ -3,6 +3,34 @@ import Link from "next/link";
 import { listarFornecedores } from "@/application/fornecedores/listar-fornecedores";
 import AlterarStatusFornecedorButton from "@/app/admin/fornecedores/components/AlterarStatusFornecedorButton";
 
+function CategoriasFornecedor({
+  categorias,
+}: {
+  categorias: {
+    categoria_fornecedor: {
+      ctf_id: number;
+      ctf_descricao: string;
+    };
+  }[];
+}) {
+  if (categorias.length === 0) {
+    return <span className="text-gray-400">Sem categoria</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {categorias.map((relacao) => (
+        <span
+          key={relacao.categoria_fornecedor.ctf_id}
+          className="rounded-full bg-[#EAF4EF] px-2.5 py-1 text-xs font-medium text-[#1B3B32]"
+        >
+          {relacao.categoria_fornecedor.ctf_descricao}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default async function FornecedoresPage() {
   const fornecedores = await listarFornecedores();
 
@@ -40,7 +68,6 @@ export default async function FornecedoresPage() {
           </div>
         ) : (
           <>
-            {/* Mobile */}
             <div className="space-y-3 md:hidden">
               {fornecedores.map((fornecedor) => (
                 <article
@@ -70,13 +97,13 @@ export default async function FornecedoresPage() {
                   </div>
 
                   <div className="mt-4 border-t border-gray-100 pt-3">
-                    <p className="text-xs text-gray-400">
-                      Categoria
-                    </p>
+                    <p className="text-xs text-gray-400">Categorias</p>
 
-                    <p className="mt-1 text-sm font-medium text-gray-700">
-                      {fornecedor.categoria_fornecedor.ctf_descricao}
-                    </p>
+                    <div className="mt-2">
+                      <CategoriasFornecedor
+                        categorias={fornecedor.fornecedorCategorias}
+                      />
+                    </div>
                   </div>
 
                   <div className="mt-4 flex items-center gap-4 border-t border-gray-100 pt-4">
@@ -96,7 +123,6 @@ export default async function FornecedoresPage() {
               ))}
             </div>
 
-            {/* Tablet e desktop */}
             <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -111,7 +137,7 @@ export default async function FornecedoresPage() {
                       </th>
 
                       <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Categoria
+                        Categorias
                       </th>
 
                       <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -141,8 +167,10 @@ export default async function FornecedoresPage() {
                           {fornecedor.for_cnpj}
                         </td>
 
-                        <td className="px-5 py-4 text-sm text-gray-600">
-                          {fornecedor.categoria_fornecedor.ctf_descricao}
+                        <td className="px-5 py-4">
+                          <CategoriasFornecedor
+                            categorias={fornecedor.fornecedorCategorias}
+                          />
                         </td>
 
                         <td className="px-5 py-4">

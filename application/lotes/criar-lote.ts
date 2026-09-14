@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
-import {
-  existeLoteAtivoNoGalpao,
-  buscarGalpaoPorId,
-} from "@/infrastructure/repositories/galpao-repository";
 import { buscarFornecedorPorId } from "@/infrastructure/repositories/fornecedor-repository";
+import {
+  buscarGalpaoPorId,
+  existeLoteAtivoNoGalpao,
+} from "@/infrastructure/repositories/galpao-repository";
 import { buscarLinhagemPorId } from "@/infrastructure/repositories/linhagem-repository";
 import {
   buscarLotePorCodigo,
@@ -35,12 +35,25 @@ const criarLoteSchema = z.object({
     .positive("Selecione um fornecedor válido."),
 
   quantidadeInicial: z
-    .number({ error: "Informe a quantidade inicial de aves." })
+    .number({
+      error: "Informe a quantidade inicial de aves.",
+    })
     .int("A quantidade deve ser um número inteiro.")
     .positive("A quantidade inicial deve ser maior que zero.")
     .max(
       500000,
-      "A quantidade inicial deve ser de no máximo 500.000 aves."
+      "A quantidade inicial deve ser de no máximo 500.000 aves.",
+    ),
+
+  idadeInicialDias: z
+    .number({
+      error: "Informe a idade inicial das aves em dias.",
+    })
+    .int("A idade inicial deve ser um número inteiro.")
+    .positive("A idade inicial deve ser maior que zero.")
+    .max(
+      3650,
+      "A idade inicial deve ser de no máximo 3.650 dias.",
     ),
 
   dataAlojamento: z.coerce.date({
@@ -62,7 +75,7 @@ export type CriarLoteResultado =
     };
 
 export async function criarLote(
-  dados: CriarLoteInput
+  dados: CriarLoteInput,
 ): Promise<CriarLoteResultado> {
   const validacao = criarLoteSchema.safeParse(dados);
 
@@ -80,6 +93,7 @@ export async function criarLote(
     galpaoId,
     fornecedorId,
     quantidadeInicial,
+    idadeInicialDias,
     dataAlojamento,
     registradoPorId,
   } = validacao.data;
@@ -87,16 +101,18 @@ export async function criarLote(
   if (dataAlojamentoEhFutura(dataAlojamento)) {
     return {
       sucesso: false,
-      mensagem: "A data de alojamento não pode ser uma data futura.",
+      mensagem:
+        "A data de alojamento não pode ser uma data futura.",
     };
   }
 
   try {
-    const [linhagem, galpao, fornecedor] = await Promise.all([
-      buscarLinhagemPorId(linhagemId),
-      buscarGalpaoPorId(galpaoId),
-      buscarFornecedorPorId(fornecedorId),
-    ]);
+    const [linhagem, galpao, fornecedor] =
+      await Promise.all([
+        buscarLinhagemPorId(linhagemId),
+        buscarGalpaoPorId(galpaoId),
+        buscarFornecedorPorId(fornecedorId),
+      ]);
 
     if (!linhagem) {
       return {
@@ -112,6 +128,23 @@ export async function criarLote(
       };
     }
 
+    const densidadeMaximaAvesM2 =
+      linhagem.lin_densidade_maxima_aves_m2 === null
+        ? null
+        : Number(linhagem.lin_densidade_maxima_aves_m2);
+
+    if (
+      densidadeMaximaAvesM2 === null ||
+      !Number.isFinite(densidadeMaximaAvesM2) ||
+      densidadeMaximaAvesM2 <= 0
+    ) {
+      return {
+        sucesso: false,
+        mensagem:
+          "A linhagem selecionada não possui densidade máxima cadastrada. Atualize a linhagem antes de cadastrar o lote.",
+      };
+    }
+
     if (!galpao) {
       return {
         sucesso: false,
@@ -122,25 +155,29 @@ export async function criarLote(
     if (galpao.gal_status !== "ATIVO") {
       return {
         sucesso: false,
-        mensagem: "O galpão selecionado não está disponível.",
+        mensagem:
+          "O galpão selecionado não está disponível.",
       };
     }
 
     if (!fornecedor) {
       return {
         sucesso: false,
-        mensagem: "O fornecedor selecionado não existe.",
+        mensagem:
+          "O fornecedor selecionado não existe.",
       };
     }
 
     if (fornecedor.for_status !== "ATIVO") {
       return {
         sucesso: false,
-        mensagem: "O fornecedor selecionado está inativo.",
+        mensagem:
+          "O fornecedor selecionado está inativo.",
       };
     }
 
-    const temLoteAtivo = await existeLoteAtivoNoGalpao(galpaoId);
+    const temLoteAtivo =
+      await existeLoteAtivoNoGalpao(galpaoId);
 
     if (temLoteAtivo) {
       return {
@@ -150,14 +187,16 @@ export async function criarLote(
       };
     }
 
-    const capacidadeMaxima = calcularCapacidadeMaximaAves(
-      Number(galpao.gal_area_m2)
-    );
+    const capacidadeMaxima =
+      calcularCapacidadeMaximaAves(
+        Number(galpao.gal_area_m2),
+        densidadeMaximaAvesM2,
+      );
 
     if (quantidadeInicial > capacidadeMaxima) {
       return {
         sucesso: false,
-        mensagem: `A quantidade informada excede a capacidade máxima do galpão (${capacidadeMaxima} aves).`,
+        mensagem: `A quantidade informada excede a capacidade máxima de ${capacidadeMaxima} aves para este galpão e esta linhagem.`,
       };
     }
 
@@ -169,7 +208,8 @@ export async function criarLote(
       tentativa++
     ) {
       const candidato = gerarCodigoLote();
-      const loteExistente = await buscarLotePorCodigo(candidato);
+      const loteExistente =
+        await buscarLotePorCodigo(candidato);
 
       if (!loteExistente) {
         codigo = candidato;
@@ -191,6 +231,7 @@ export async function criarLote(
       galpaoId,
       fornecedorId,
       quantidadeInicial,
+      idadeInicialDias,
       dataAlojamento,
       registradoPorId,
     });
@@ -219,7 +260,8 @@ export async function criarLote(
 
     return {
       sucesso: false,
-      mensagem: "Não foi possível cadastrar o lote. Tente novamente.",
+      mensagem:
+        "Não foi possível cadastrar o lote. Tente novamente.",
     };
   }
 }

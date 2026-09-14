@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import LinhagemForm from "@/app/admin/linhagens/components/LinhagemForm";
 import { buscarLinhagem } from "@/application/linhagens/buscar-linhagem";
 import { listarTiposOvo } from "@/application/linhagens/listar-tipos-ovo";
-import LinhagemForm from "@/app/admin/linhagens/components/LinhagemForm";
 
 type EditarLinhagemPageProps = {
   params: Promise<{
@@ -41,7 +41,8 @@ export default async function EditarLinhagemPage({
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              Atualize dados técnicos, imagens, cartilhas e metas semanais.
+              Atualize dados técnicos, imagens, cartilhas e metas
+              semanais.
             </p>
           </div>
 
@@ -60,32 +61,53 @@ export default async function EditarLinhagemPage({
             id: linhagem.lin_id,
             nome: linhagem.lin_nome,
             descricao: linhagem.lin_descricao,
-            imagemGalinhaUrl: linhagem.lin_imagem_galinha_url,
+            densidadeMaximaAvesM2:
+              linhagem.lin_densidade_maxima_aves_m2 ===
+              null
+                ? null
+                : Number(
+                    linhagem.lin_densidade_maxima_aves_m2,
+                  ),
+            imagemGalinhaUrl:
+              linhagem.lin_imagem_galinha_url,
             imagemOvoUrl: linhagem.lin_imagem_ovo_url,
             tipoOvoId: linhagem.tov_id,
-            metas: linhagem.meta_linhagem_semanal.map((meta) => ({
-              semana: meta.mls_semana,
-              pesoMetaGramas:
-                meta.mls_peso_meta_gramas === null
-                  ? null
-                  : Number(meta.mls_peso_meta_gramas),
-              consumoMetaGramas:
-                meta.mls_consumo_meta_gramas === null
-                  ? null
-                  : Number(meta.mls_consumo_meta_gramas),
-              produtividadeMetaPercentual:
-                meta.mls_produtividade_meta_percentual === null
-                  ? null
-                  : Number(meta.mls_produtividade_meta_percentual),
-            })),
-            cartilhas: linhagem.cartilhas.map((cartilha) => ({
-              ctl_id: cartilha.ctl_id,
-              ctl_titulo: cartilha.ctl_titulo,
-              ctl_fonte: cartilha.ctl_fonte,
-              ctl_sistema: cartilha.ctl_sistema,
-              ctl_edicao: cartilha.ctl_edicao,
-              ctl_url: cartilha.ctl_url,
-            })),
+            metas:
+              linhagem.meta_linhagem_semanal.map(
+                (meta) => ({
+                  semana: meta.mls_semana,
+                  pesoMetaGramas:
+                    meta.mls_peso_meta_gramas === null
+                      ? null
+                      : Number(
+                          meta.mls_peso_meta_gramas,
+                        ),
+                  consumoMetaGramas:
+                    meta.mls_consumo_meta_gramas ===
+                    null
+                      ? null
+                      : Number(
+                          meta.mls_consumo_meta_gramas,
+                        ),
+                  produtividadeMetaPercentual:
+                    meta.mls_produtividade_meta_percentual ===
+                    null
+                      ? null
+                      : Number(
+                          meta.mls_produtividade_meta_percentual,
+                        ),
+                }),
+              ),
+            cartilhas: linhagem.cartilhas.map(
+              (cartilha) => ({
+                ctl_id: cartilha.ctl_id,
+                ctl_titulo: cartilha.ctl_titulo,
+                ctl_fonte: cartilha.ctl_fonte,
+                ctl_sistema: cartilha.ctl_sistema,
+                ctl_edicao: cartilha.ctl_edicao,
+                ctl_url: cartilha.ctl_url,
+              }),
+            ),
           }}
         />
       </div>

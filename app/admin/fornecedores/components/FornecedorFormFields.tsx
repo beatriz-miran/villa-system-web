@@ -59,7 +59,7 @@ type FornecedorFormFieldsProps = {
     bairro: string | null;
     cidade: string | null;
     estado: string | null;
-    categoriaId: number;
+    categoriaIds: number[];
   };
 };
 
@@ -78,31 +78,29 @@ export default function FornecedorFormFields({
   valoresIniciais,
 }: FornecedorFormFieldsProps) {
   const [cnpj, setCnpj] = useState(
-    formatarCnpjParcial(valoresIniciais?.cnpj ?? "")
+    formatarCnpjParcial(valoresIniciais?.cnpj ?? ""),
   );
-  const [categoriaId, setCategoriaId] = useState(
-    valoresIniciais?.categoriaId
-      ? String(valoresIniciais.categoriaId)
-      : ""
+  const [categoriaIds, setCategoriaIds] = useState<string[]>(
+    valoresIniciais?.categoriaIds?.map(String) ?? [],
   );
   const [razaoSocial, setRazaoSocial] = useState(
-    valoresIniciais?.razaoSocial ?? ""
+    valoresIniciais?.razaoSocial ?? "",
   );
   const [nomeFantasia, setNomeFantasia] = useState(
-    valoresIniciais?.nomeFantasia ?? ""
+    valoresIniciais?.nomeFantasia ?? "",
   );
   const [email, setEmail] = useState(valoresIniciais?.email ?? "");
   const [telefonePrincipal, setTelefonePrincipal] = useState(
-    formatarTelefoneParcial(valoresIniciais?.telefonePrincipal ?? "")
+    formatarTelefoneParcial(valoresIniciais?.telefonePrincipal ?? ""),
   );
   const [telefoneSecundario, setTelefoneSecundario] = useState(
-    formatarTelefoneParcial(valoresIniciais?.telefoneSecundario ?? "")
+    formatarTelefoneParcial(valoresIniciais?.telefoneSecundario ?? ""),
   );
   const [cep, setCep] = useState(
-    formatarCepParcial(valoresIniciais?.cep ?? "")
+    formatarCepParcial(valoresIniciais?.cep ?? ""),
   );
   const [logradouro, setLogradouro] = useState(
-    valoresIniciais?.logradouro ?? ""
+    valoresIniciais?.logradouro ?? "",
   );
   const [numero, setNumero] = useState(valoresIniciais?.numero ?? "");
   const [bairro, setBairro] = useState(valoresIniciais?.bairro ?? "");
@@ -111,9 +109,7 @@ export default function FornecedorFormFields({
 
   const [consultandoCnpj, setConsultandoCnpj] = useState(false);
   const [consultandoCep, setConsultandoCep] = useState(false);
-  const [avisoCnpj, setAvisoCnpj] = useState<AvisoConsulta | null>(
-    null
-  );
+  const [avisoCnpj, setAvisoCnpj] = useState<AvisoConsulta | null>(null);
   const [avisoCep, setAvisoCep] = useState<AvisoConsulta | null>(null);
 
   const ultimoCnpjConsultadoRef = useRef<string | null>(null);
@@ -122,22 +118,23 @@ export default function FornecedorFormFields({
   const consultaCepIdRef = useRef(0);
 
   const categoriasOrdenadas = [...categorias].sort((a, b) =>
-    a.ctf_descricao.localeCompare(b.ctf_descricao, "pt-BR")
+    a.ctf_descricao.localeCompare(b.ctf_descricao, "pt-BR"),
   );
 
   const ufsOrdenadas = [...ufsBrasil].sort((a, b) =>
-    a.nome.localeCompare(b.nome, "pt-BR")
+    a.nome.localeCompare(b.nome, "pt-BR"),
   );
 
-  const categoriaSelecionada = categorias.find(
-    (categoria) => String(categoria.ctf_id) === categoriaId
+  const categoriasSelecionadas = categoriasOrdenadas.filter((categoria) =>
+    categoriaIds.includes(String(categoria.ctf_id)),
   );
 
   const cnpjEstaValido = cnpjValido(somenteDigitos(cnpj));
+
   const identificacaoCompleta =
     cnpjEstaValido &&
     razaoSocial.trim().length > 0 &&
-    categoriaId.length > 0;
+    categoriaIds.length > 0;
 
   const telefonePrincipalValido =
     telefonePrincipal.replace(/\D/g, "").length >= 10;
@@ -155,6 +152,14 @@ export default function FornecedorFormFields({
     nomeFantasia.trim() ||
     razaoSocial.trim() ||
     "Novo fornecedor";
+
+  function alternarCategoria(categoriaId: string) {
+    setCategoriaIds((categoriasAtuais) =>
+      categoriasAtuais.includes(categoriaId)
+        ? categoriasAtuais.filter((id) => id !== categoriaId)
+        : [...categoriasAtuais, categoriaId],
+    );
+  }
 
   function preencherEnderecoDoCep(dados: {
     cep: string;
@@ -253,7 +258,7 @@ export default function FornecedorFormFields({
 
     if (dados.telefonePrincipal) {
       setTelefonePrincipal(
-        formatarTelefoneParcial(dados.telefonePrincipal)
+        formatarTelefoneParcial(dados.telefonePrincipal),
       );
     }
 
@@ -344,7 +349,7 @@ export default function FornecedorFormFields({
   return (
     <form
       action={formAction}
-      className="grid items-start gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(20rem,0.85fr)]"
+      className="grid items-start gap-6 2xl:grid-cols-[minmax(0,2fr)_minmax(20rem,0.85fr)]"
     >
       {fornecedorId ? (
         <input type="hidden" name="id" value={fornecedorId} />
@@ -372,8 +377,7 @@ export default function FornecedorFormFields({
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Consulte o CNPJ e informe os dados principais do
-                fornecedor.
+                Consulte o CNPJ e informe os dados principais do fornecedor.
               </p>
             </div>
           </div>
@@ -431,34 +435,6 @@ export default function FornecedorFormFields({
             </div>
 
             <div>
-              <label htmlFor="categoriaId" className={labelClassName}>
-                Categoria de fornecimento
-              </label>
-
-              <select
-                id="categoriaId"
-                name="categoriaId"
-                required
-                value={categoriaId}
-                onChange={(event) => setCategoriaId(event.target.value)}
-                className={`${inputClassName} bg-white`}
-              >
-                <option value="" disabled>
-                  Selecione uma categoria
-                </option>
-
-                {categoriasOrdenadas.map((categoria) => (
-                  <option
-                    key={categoria.ctf_id}
-                    value={categoria.ctf_id}
-                  >
-                    {categoria.ctf_descricao}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
               <label htmlFor="razaoSocial" className={labelClassName}>
                 Razão social
               </label>
@@ -492,6 +468,53 @@ export default function FornecedorFormFields({
                 className={inputClassName}
               />
             </div>
+
+                <fieldset className="sm:col-span-2">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <legend className={labelClassName}>
+                        Categorias de fornecimento
+                      </legend>
+
+                      <span className="text-xs text-gray-500">
+                        {categoriaIds.length === 0
+                          ? "Nenhuma selecionada"
+                          : `${categoriaIds.length} selecionada(s)`}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      Selecione todas as categorias que este fornecedor atende.
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {categoriasOrdenadas.map((categoria) => {
+                        const categoriaId = String(categoria.ctf_id);
+                        const selecionada = categoriaIds.includes(categoriaId);
+
+                        return (
+                          <label
+                            key={categoria.ctf_id}
+                            className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
+                              selecionada
+                                ? "border-[#1B3B32] bg-[#EAF4EF] font-semibold text-[#1B3B32]"
+                                : "border-gray-300 bg-white text-gray-700 hover:border-[#1B3B32]/50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              name="categoriaIds"
+                              value={categoria.ctf_id}
+                              checked={selecionada}
+                              onChange={() => alternarCategoria(categoriaId)}
+                              className="h-4 w-4 accent-[#1B3B32]"
+                            />
+
+                            <span>{categoria.ctf_descricao}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                </fieldset>
           </div>
         </section>
 
@@ -507,8 +530,7 @@ export default function FornecedorFormFields({
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Informe os canais utilizados para comunicação com o
-                fornecedor.
+                Informe os canais utilizados para comunicação com o fornecedor.
               </p>
             </div>
           </div>
@@ -534,10 +556,7 @@ export default function FornecedorFormFields({
             </div>
 
             <div>
-              <label
-                htmlFor="telefonePrincipal"
-                className={labelClassName}
-              >
+              <label htmlFor="telefonePrincipal" className={labelClassName}>
                 Telefone principal
               </label>
 
@@ -552,7 +571,7 @@ export default function FornecedorFormFields({
                 value={telefonePrincipal}
                 onChange={(event) =>
                   setTelefonePrincipal(
-                    formatarTelefoneParcial(event.target.value)
+                    formatarTelefoneParcial(event.target.value),
                   )
                 }
                 className={inputClassName}
@@ -560,10 +579,7 @@ export default function FornecedorFormFields({
             </div>
 
             <div>
-              <label
-                htmlFor="telefoneSecundario"
-                className={labelClassName}
-              >
+              <label htmlFor="telefoneSecundario" className={labelClassName}>
                 Telefone secundário
               </label>
 
@@ -577,7 +593,7 @@ export default function FornecedorFormFields({
                 value={telefoneSecundario}
                 onChange={(event) =>
                   setTelefoneSecundario(
-                    formatarTelefoneParcial(event.target.value)
+                    formatarTelefoneParcial(event.target.value),
                   )
                 }
                 className={inputClassName}
@@ -757,7 +773,7 @@ export default function FornecedorFormFields({
           </div>
         </section>
 
-        <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-white p-5 sm:flex-row sm:justify-end xl:hidden">
+        <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-white p-5 sm:flex-row sm:justify-end 2xl:hidden">
           <Link
             href="/admin/fornecedores"
             className="rounded-md border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
@@ -775,7 +791,7 @@ export default function FornecedorFormFields({
         </div>
       </div>
 
-      <aside className="space-y-4 xl:sticky xl:top-6">
+      <aside className="space-y-4 2xl:sticky 2xl:top-6">
         <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -787,10 +803,22 @@ export default function FornecedorFormFields({
                 {nomeExibido}
               </h2>
 
-              <p className="mt-1 text-sm text-gray-500">
-                {categoriaSelecionada?.ctf_descricao ??
-                  "Categoria não selecionada"}
-              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {categoriasSelecionadas.length > 0 ? (
+                  categoriasSelecionadas.map((categoria) => (
+                    <span
+                      key={categoria.ctf_id}
+                      className="rounded-full bg-[#EAF4EF] px-2.5 py-1 text-xs font-medium text-[#1B3B32]"
+                    >
+                      {categoria.ctf_descricao}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">
+                    Nenhuma categoria selecionada
+                  </span>
+                )}
+              </div>
             </div>
 
             <Building2
@@ -831,7 +859,7 @@ export default function FornecedorFormFields({
                 <p className="mt-0.5 text-xs text-gray-500">
                   {identificacaoCompleta
                     ? "Dados principais preenchidos"
-                    : "CNPJ, razão social e categoria"}
+                    : "CNPJ, razão social e categorias"}
                 </p>
               </div>
             </li>
@@ -952,7 +980,7 @@ export default function FornecedorFormFields({
           </div>
         </section>
 
-        <section className="hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm xl:block">
+        <section className="hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm 2xl:block">
           <button
             type="submit"
             disabled={pendente}

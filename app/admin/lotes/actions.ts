@@ -27,7 +27,7 @@ function extrairData(formData: FormData, campo: string) {
 
 export async function criarLoteAction(
   _prevState: CriarLoteActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CriarLoteActionState> {
   const session = await auth();
 
@@ -47,8 +47,18 @@ export async function criarLoteAction(
     linhagemId: extrairNumero(formData, "linhagemId"),
     galpaoId: extrairNumero(formData, "galpaoId"),
     fornecedorId: extrairNumero(formData, "fornecedorId"),
-    quantidadeInicial: extrairNumero(formData, "quantidadeInicial"),
-    dataAlojamento: extrairData(formData, "dataAlojamento"),
+    quantidadeInicial: extrairNumero(
+      formData,
+      "quantidadeInicial",
+    ),
+    idadeInicialDias: extrairNumero(
+      formData,
+      "idadeInicialDias",
+    ),
+    dataAlojamento: extrairData(
+      formData,
+      "dataAlojamento",
+    ),
     registradoPorId: Number(session.user.id),
   });
 
@@ -64,7 +74,7 @@ export async function criarLoteAction(
 
 export async function atualizarLoteAction(
   _prevState: AtualizarLoteActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AtualizarLoteActionState> {
   const session = await auth();
 
@@ -85,8 +95,18 @@ export async function atualizarLoteAction(
     linhagemId: extrairNumero(formData, "linhagemId"),
     galpaoId: extrairNumero(formData, "galpaoId"),
     fornecedorId: extrairNumero(formData, "fornecedorId"),
-    quantidadeInicial: extrairNumero(formData, "quantidadeInicial"),
-    dataAlojamento: extrairData(formData, "dataAlojamento"),
+    quantidadeInicial: extrairNumero(
+      formData,
+      "quantidadeInicial",
+    ),
+    idadeInicialDias: extrairNumero(
+      formData,
+      "idadeInicialDias",
+    ),
+    dataAlojamento: extrairData(
+      formData,
+      "dataAlojamento",
+    ),
   });
 
   if (!resultado.sucesso) {

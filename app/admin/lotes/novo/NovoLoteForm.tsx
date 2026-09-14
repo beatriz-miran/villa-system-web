@@ -2,18 +2,22 @@
 
 import { useActionState } from "react";
 
-import { criarLoteAction, CriarLoteActionState } from "@/app/admin/lotes/actions";
+import {
+  criarLoteAction,
+  type CriarLoteActionState,
+} from "@/app/admin/lotes/actions";
 import LoteFormFields from "@/app/admin/lotes/components/LoteFormFields";
 
 type NovoLoteFormProps = {
   linhagens: {
     lin_id: number;
     lin_nome: string;
+    lin_densidade_maxima_aves_m2: number | null;
   }[];
   galpoes: {
     gal_id: number;
     gal_nome: string;
-    gal_area_m2: unknown;
+    gal_area_m2: number;
   }[];
   fornecedores: {
     for_id: number;
@@ -31,7 +35,7 @@ export default function NovoLoteForm({
 }: NovoLoteFormProps) {
   const [state, formAction, pendente] = useActionState(
     criarLoteAction,
-    estadoInicial
+    estadoInicial,
   );
 
   return (

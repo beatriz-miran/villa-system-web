@@ -6,6 +6,7 @@ type CriarLoteDados = {
   galpaoId: number;
   fornecedorId: number;
   quantidadeInicial: number;
+  idadeInicialDias: number;
   dataAlojamento: Date;
   registradoPorId: number;
 };
@@ -15,6 +16,7 @@ type AtualizarLoteDados = {
   galpaoId: number;
   fornecedorId: number;
   quantidadeInicial: number;
+  idadeInicialDias: number;
   dataAlojamento: Date;
 };
 
@@ -22,6 +24,7 @@ const selectLoteResumo = {
   lta_id: true,
   lta_codigo_qr_code: true,
   lta_quant_inicial: true,
+  lta_idade_inicial: true,
   lta_data_alojamento: true,
   lta_status: true,
   linhagem: {
@@ -80,6 +83,7 @@ const selectLoteDetalhado = {
 const selectLoteEdicao = {
   lta_id: true,
   lta_quant_inicial: true,
+  lta_idade_inicial: true,
   lta_data_alojamento: true,
   lin_id: true,
   gal_id: true,
@@ -129,18 +133,27 @@ export async function criarLote(dados: CriarLoteDados) {
     data: {
       lta_codigo_qr_code: dados.codigo,
       lta_quant_inicial: dados.quantidadeInicial,
+      lta_idade_inicial: dados.idadeInicialDias,
       lta_data_alojamento: dados.dataAlojamento,
       linhagem: {
-        connect: { lin_id: dados.linhagemId },
+        connect: {
+          lin_id: dados.linhagemId,
+        },
       },
       galpao: {
-        connect: { gal_id: dados.galpaoId },
+        connect: {
+          gal_id: dados.galpaoId,
+        },
       },
       fornecedor: {
-        connect: { for_id: dados.fornecedorId },
+        connect: {
+          for_id: dados.fornecedorId,
+        },
       },
       usuario: {
-        connect: { usu_id: dados.registradoPorId },
+        connect: {
+          usu_id: dados.registradoPorId,
+        },
       },
     },
     select: selectLoteResumo,
@@ -149,7 +162,7 @@ export async function criarLote(dados: CriarLoteDados) {
 
 export async function atualizarLote(
   id: number,
-  dados: AtualizarLoteDados
+  dados: AtualizarLoteDados,
 ) {
   return prisma.lote_aves.update({
     where: {
@@ -157,15 +170,22 @@ export async function atualizarLote(
     },
     data: {
       lta_quant_inicial: dados.quantidadeInicial,
+      lta_idade_inicial: dados.idadeInicialDias,
       lta_data_alojamento: dados.dataAlojamento,
       linhagem: {
-        connect: { lin_id: dados.linhagemId },
+        connect: {
+          lin_id: dados.linhagemId,
+        },
       },
       galpao: {
-        connect: { gal_id: dados.galpaoId },
+        connect: {
+          gal_id: dados.galpaoId,
+        },
       },
       fornecedor: {
-        connect: { for_id: dados.fornecedorId },
+        connect: {
+          for_id: dados.fornecedorId,
+        },
       },
     },
     select: selectLoteResumo,

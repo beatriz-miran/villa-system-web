@@ -1,24 +1,42 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { criarLote } from "./criar-lote";
 
-vi.mock("@/infrastructure/repositories/galpao-repository", () => ({
-  buscarGalpaoPorId: vi.fn(),
-  existeLoteAtivoNoGalpao: vi.fn(),
-}));
+vi.mock(
+  "@/infrastructure/repositories/galpao-repository",
+  () => ({
+    buscarGalpaoPorId: vi.fn(),
+    existeLoteAtivoNoGalpao: vi.fn(),
+  }),
+);
 
-vi.mock("@/infrastructure/repositories/fornecedor-repository", () => ({
-  buscarFornecedorPorId: vi.fn(),
-}));
+vi.mock(
+  "@/infrastructure/repositories/fornecedor-repository",
+  () => ({
+    buscarFornecedorPorId: vi.fn(),
+  }),
+);
 
-vi.mock("@/infrastructure/repositories/linhagem-repository", () => ({
-  buscarLinhagemPorId: vi.fn(),
-}));
+vi.mock(
+  "@/infrastructure/repositories/linhagem-repository",
+  () => ({
+    buscarLinhagemPorId: vi.fn(),
+  }),
+);
 
-vi.mock("@/infrastructure/repositories/lote-repository", () => ({
-  buscarLotePorCodigo: vi.fn(),
-  criarLote: vi.fn(),
-}));
+vi.mock(
+  "@/infrastructure/repositories/lote-repository",
+  () => ({
+    buscarLotePorCodigo: vi.fn(),
+    criarLote: vi.fn(),
+  }),
+);
 
 import {
   buscarGalpaoPorId,
@@ -31,19 +49,29 @@ import {
   criarLote as criarLoteRepository,
 } from "@/infrastructure/repositories/lote-repository";
 
-const linhagemAtiva = { lin_id: 1, lin_status: "ATIVO" };
+const linhagemAtiva = {
+  lin_id: 1,
+  lin_status: "ATIVO",
+  lin_densidade_maxima_aves_m2: 7,
+};
+
 const galpaoDisponivel = {
   gal_id: 2,
   gal_status: "ATIVO",
   gal_area_m2: 100,
 };
-const fornecedorAtivo = { for_id: 3, for_status: "ATIVO" };
+
+const fornecedorAtivo = {
+  for_id: 3,
+  for_status: "ATIVO",
+};
 
 const dadosBase = {
   linhagemId: 1,
   galpaoId: 2,
   fornecedorId: 3,
   quantidadeInicial: 500,
+  idadeInicialDias: 120,
   dataAlojamento: new Date(Date.UTC(2020, 0, 1)),
   registradoPorId: 9,
 };
@@ -52,17 +80,21 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   vi.mocked(buscarLinhagemPorId).mockResolvedValue(
-    linhagemAtiva as never
+    linhagemAtiva as never,
   );
   vi.mocked(buscarGalpaoPorId).mockResolvedValue(
-    galpaoDisponivel as never
+    galpaoDisponivel as never,
   );
   vi.mocked(buscarFornecedorPorId).mockResolvedValue(
-    fornecedorAtivo as never
+    fornecedorAtivo as never,
   );
-  vi.mocked(existeLoteAtivoNoGalpao).mockResolvedValue(false);
+  vi.mocked(
+    existeLoteAtivoNoGalpao,
+  ).mockResolvedValue(false);
   vi.mocked(buscarLotePorCodigo).mockResolvedValue(null);
-  vi.mocked(criarLoteRepository).mockResolvedValue({} as never);
+  vi.mocked(criarLoteRepository).mockResolvedValue(
+    {} as never,
+  );
 });
 
 describe("criarLote", () => {
@@ -84,18 +116,24 @@ describe("criarLote", () => {
   });
 
   it("rejeita quando o galpão já possui um lote ativo", async () => {
-    vi.mocked(existeLoteAtivoNoGalpao).mockResolvedValue(true);
+    vi.mocked(
+      existeLoteAtivoNoGalpao,
+    ).mockResolvedValue(true);
 
     const resultado = await criarLote(dadosBase);
 
     expect(resultado.sucesso).toBe(false);
+
     if (!resultado.sucesso) {
-      expect(resultado.mensagem).toMatch(/já possui um lote ativo/);
+      expect(resultado.mensagem).toMatch(
+        /já possui um lote ativo/,
+      );
     }
+
     expect(criarLoteRepository).not.toHaveBeenCalled();
   });
 
-  it("rejeita quando o galpão não está disponível (status diferente de ATIVO)", async () => {
+  it("rejeita quando o galpão não está disponível", async () => {
     vi.mocked(buscarGalpaoPorId).mockResolvedValue({
       ...galpaoDisponivel,
       gal_status: "MANUTENCAO",
@@ -104,23 +142,65 @@ describe("criarLote", () => {
     const resultado = await criarLote(dadosBase);
 
     expect(resultado.sucesso).toBe(false);
+
     if (!resultado.sucesso) {
-      expect(resultado.mensagem).toMatch(/não está disponível/);
+      expect(resultado.mensagem).toMatch(
+        /não está disponível/,
+      );
     }
+
     expect(criarLoteRepository).not.toHaveBeenCalled();
   });
 
-  it("rejeita quando a quantidade excede a capacidade máxima do galpão", async () => {
-    // área de 100 m² * 7 aves/m² = capacidade máxima de 700 aves
+  it("calcula a capacidade usando a densidade da linhagem", async () => {
+    vi.mocked(buscarLinhagemPorId).mockResolvedValue({
+      ...linhagemAtiva,
+      lin_densidade_maxima_aves_m2: 9,
+    } as never);
+
+    const resultadoNoLimite = await criarLote({
+      ...dadosBase,
+      quantidadeInicial: 900,
+    });
+
+    expect(resultadoNoLimite.sucesso).toBe(true);
+    expect(criarLoteRepository).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejeita quando a quantidade excede a capacidade calculada", async () => {
+    // 100 m² × 7 aves/m² = capacidade máxima de 700 aves.
     const resultado = await criarLote({
       ...dadosBase,
       quantidadeInicial: 701,
     });
 
     expect(resultado.sucesso).toBe(false);
+
     if (!resultado.sucesso) {
-      expect(resultado.mensagem).toMatch(/excede a capacidade máxima/);
+      expect(resultado.mensagem).toMatch(
+        /capacidade máxima de 700 aves/,
+      );
     }
+
+    expect(criarLoteRepository).not.toHaveBeenCalled();
+  });
+
+  it("rejeita linhagem sem densidade máxima cadastrada", async () => {
+    vi.mocked(buscarLinhagemPorId).mockResolvedValue({
+      ...linhagemAtiva,
+      lin_densidade_maxima_aves_m2: null,
+    } as never);
+
+    const resultado = await criarLote(dadosBase);
+
+    expect(resultado.sucesso).toBe(false);
+
+    if (!resultado.sucesso) {
+      expect(resultado.mensagem).toMatch(
+        /não possui densidade máxima cadastrada/,
+      );
+    }
+
     expect(criarLoteRepository).not.toHaveBeenCalled();
   });
 
@@ -134,14 +214,20 @@ describe("criarLote", () => {
     });
 
     expect(resultado.sucesso).toBe(false);
+
     if (!resultado.sucesso) {
-      expect(resultado.mensagem).toMatch(/não pode ser uma data futura/);
+      expect(resultado.mensagem).toMatch(
+        /não pode ser uma data futura/,
+      );
     }
+
     expect(criarLoteRepository).not.toHaveBeenCalled();
   });
 
   it("rejeita quando a linhagem não existe", async () => {
-    vi.mocked(buscarLinhagemPorId).mockResolvedValue(null);
+    vi.mocked(buscarLinhagemPorId).mockResolvedValue(
+      null,
+    );
 
     const resultado = await criarLote(dadosBase);
 
@@ -161,9 +247,11 @@ describe("criarLote", () => {
     expect(criarLoteRepository).not.toHaveBeenCalled();
   });
 
-  it("tenta novamente ao gerar um código já existente, até encontrar um único", async () => {
+  it("tenta novamente quando o código gerado já existe", async () => {
     vi.mocked(buscarLotePorCodigo)
-      .mockResolvedValueOnce({ lta_id: 999 } as never)
+      .mockResolvedValueOnce({
+        lta_id: 999,
+      } as never)
       .mockResolvedValueOnce(null);
 
     const resultado = await criarLote(dadosBase);

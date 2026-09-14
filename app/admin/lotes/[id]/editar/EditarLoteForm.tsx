@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import {
   atualizarLoteAction,
-  AtualizarLoteActionState,
+  type AtualizarLoteActionState,
 } from "@/app/admin/lotes/actions";
 import LoteFormFields from "@/app/admin/lotes/components/LoteFormFields";
 
@@ -15,16 +15,18 @@ type EditarLoteFormProps = {
     galpaoId: number;
     fornecedorId: number;
     quantidadeInicial: string;
+    idadeInicialDias: string;
     dataAlojamento: string;
   };
   linhagens: {
     lin_id: number;
     lin_nome: string;
+    lin_densidade_maxima_aves_m2: number | null;
   }[];
   galpoes: {
     gal_id: number;
     gal_nome: string;
-    gal_area_m2: unknown;
+    gal_area_m2: number;
   }[];
   fornecedores: {
     for_id: number;
@@ -43,7 +45,7 @@ export default function EditarLoteForm({
 }: EditarLoteFormProps) {
   const [state, formAction, pendente] = useActionState(
     atualizarLoteAction,
-    estadoInicial
+    estadoInicial,
   );
 
   return (
@@ -61,6 +63,7 @@ export default function EditarLoteForm({
         galpaoId: lote.galpaoId,
         fornecedorId: lote.fornecedorId,
         quantidadeInicial: lote.quantidadeInicial,
+        idadeInicialDias: lote.idadeInicialDias,
         dataAlojamento: lote.dataAlojamento,
       }}
     />

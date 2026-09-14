@@ -27,7 +27,7 @@ type EditarFornecedorFormProps = {
     bairro: string | null;
     cidade: string | null;
     estado: string | null;
-    categoriaId: number;
+    categoriaIds: number[];
   };
 };
 
@@ -39,7 +39,7 @@ export default function EditarFornecedorForm({
 }: EditarFornecedorFormProps) {
   const [state, formAction, pendente] = useActionState(
     atualizarFornecedorAction,
-    estadoInicial
+    estadoInicial,
   );
 
   return (

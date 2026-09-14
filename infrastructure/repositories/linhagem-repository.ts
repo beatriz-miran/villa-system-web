@@ -1,6 +1,4 @@
-import type {
-  cartilha_linhagem_ctl_sistema,
-} from "@/generated/prisma/client";
+import type { cartilha_linhagem_ctl_sistema } from "@/generated/prisma/client";
 
 import { prisma } from "../database/prisma";
 
@@ -22,6 +20,7 @@ type CartilhaLinhagemDados = {
 type CriarLinhagemDados = {
   nome: string;
   descricao: string | null;
+  densidadeMaximaAvesM2: number;
   imagemGalinhaUrl?: string | null;
   imagemOvoUrl?: string | null;
   tipoOvoId: number;
@@ -38,7 +37,7 @@ type DecimalConvertivel = {
 };
 
 function decimalParaNumero(
-  valor: DecimalConvertivel | null
+  valor: DecimalConvertivel | null,
 ): number | null {
   return valor === null ? null : Number(valor.toString());
 }
@@ -47,6 +46,7 @@ const selecaoLinhagem = {
   lin_id: true,
   lin_nome: true,
   lin_descricao: true,
+  lin_densidade_maxima_aves_m2: true,
   lin_imagem_galinha_url: true,
   lin_imagem_ovo_url: true,
   lin_status: true,
@@ -132,12 +132,14 @@ export async function buscarLinhagemPorNome(nome: string) {
 }
 
 export async function criarLinhagem(
-  dados: CriarLinhagemDados
+  dados: CriarLinhagemDados,
 ) {
   return prisma.linhagem.create({
     data: {
       lin_nome: dados.nome,
       lin_descricao: dados.descricao,
+      lin_densidade_maxima_aves_m2:
+        dados.densidadeMaximaAvesM2,
       lin_imagem_galinha_url:
         dados.imagemGalinhaUrl ?? null,
       lin_imagem_ovo_url: dados.imagemOvoUrl ?? null,
@@ -173,7 +175,7 @@ export async function criarLinhagem(
 
 export async function atualizarLinhagem(
   id: number,
-  dados: AtualizarLinhagemDados
+  dados: AtualizarLinhagemDados,
 ) {
   return prisma.$transaction(
     async (tx) => {
@@ -194,13 +196,13 @@ export async function atualizarLinhagem(
         metasAtuais.map((meta) => [
           meta.mls_semana,
           meta,
-        ])
+        ]),
       );
 
       const metasParaSalvar = dados.metas.filter(
         (meta) => {
           const metaAtual = metasAtuaisPorSemana.get(
-            meta.semana
+            meta.semana,
           );
 
           if (!metaAtual) {
@@ -209,16 +211,16 @@ export async function atualizarLinhagem(
 
           return (
             decimalParaNumero(
-              metaAtual.mls_peso_meta_gramas
+              metaAtual.mls_peso_meta_gramas,
             ) !== meta.pesoMetaGramas ||
             decimalParaNumero(
-              metaAtual.mls_consumo_meta_gramas
+              metaAtual.mls_consumo_meta_gramas,
             ) !== meta.consumoMetaGramas ||
             decimalParaNumero(
-              metaAtual.mls_produtividade_meta_percentual
+              metaAtual.mls_produtividade_meta_percentual,
             ) !== meta.produtividadeMetaPercentual
           );
-        }
+        },
       );
 
       const linhagemAtualizada =
@@ -229,6 +231,8 @@ export async function atualizarLinhagem(
           data: {
             lin_nome: dados.nome,
             lin_descricao: dados.descricao,
+            lin_densidade_maxima_aves_m2:
+              dados.densidadeMaximaAvesM2,
             lin_imagem_galinha_url:
               dados.imagemGalinhaUrl ?? null,
             lin_imagem_ovo_url:
@@ -244,7 +248,7 @@ export async function atualizarLinhagem(
         });
 
       const semanasInformadas = dados.metas.map(
-        (meta) => meta.semana
+        (meta) => meta.semana,
       );
 
       await tx.meta_linhagem_semanal.deleteMany({
@@ -288,8 +292,8 @@ export async function atualizarLinhagem(
               mls_produtividade_meta_percentual:
                 meta.produtividadeMetaPercentual,
             },
-          })
-        )
+          }),
+        ),
       );
 
       await tx.cartilha_linhagem.deleteMany({
@@ -316,13 +320,13 @@ export async function atualizarLinhagem(
     {
       maxWait: 10_000,
       timeout: 30_000,
-    }
+    },
   );
 }
 
 export async function atualizarStatusLinhagem(
   id: number,
-  status: LinhagemStatus
+  status: LinhagemStatus,
 ) {
   return prisma.linhagem.update({
     where: {

@@ -36,11 +36,11 @@ model categoria_agenda {
 }
 
 model categoria_fornecedor {
-  ctf_id        Int          @id @default(autoincrement())
-  ctf_descricao String       @unique(map: "ctf_descricao") @db.VarChar(100)
-  created_at    DateTime?    @default(now()) @db.Timestamp(0)
-  updated_at    DateTime?    @default(now()) @db.Timestamp(0)
-  fornecedor    fornecedor[]
+  ctf_id                Int                    @id @default(autoincrement())
+  ctf_descricao         String                 @unique(map: "ctf_descricao") @db.VarChar(100)
+  created_at            DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?              @default(now()) @db.Timestamp(0)
+  fornecedor_categorias fornecedor_categoria[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -120,30 +120,39 @@ model despesa_operacional {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model fornecedor {
-  for_id                  Int                   @id @default(autoincrement())
-  for_razao_social        String                @db.VarChar(200)
-  for_nome_fantasia       String?               @db.VarChar(200)
-  for_cnpj                String                @unique(map: "for_cnpj") @db.Char(18)
-  for_email               String                @unique(map: "for_email") @db.VarChar(150)
-  for_telefone_principal  String                @db.VarChar(20)
-  for_telefone_secundario String?               @db.VarChar(20)
-  for_cep                 String?               @db.VarChar(10)
-  for_logradouro          String?               @db.VarChar(200)
-  for_numero              String?               @db.VarChar(20)
-  for_bairro              String?               @db.VarChar(100)
-  for_cidade              String?               @db.VarChar(100)
-  for_estado              String?               @db.Char(2)
-  for_status              fornecedor_for_status @default(ATIVO)
-  ctf_id                  Int
-  created_at              DateTime              @default(now()) @db.Timestamp(0)
-  updated_at              DateTime              @default(now()) @db.Timestamp(0)
+  for_id                  Int                    @id @default(autoincrement())
+  for_razao_social        String                 @db.VarChar(200)
+  for_nome_fantasia       String?                @db.VarChar(200)
+  for_cnpj                String                 @unique(map: "for_cnpj") @db.Char(18)
+  for_email               String                 @unique(map: "for_email") @db.VarChar(150)
+  for_telefone_principal  String                 @db.VarChar(20)
+  for_telefone_secundario String?                @db.VarChar(20)
+  for_cep                 String?                @db.VarChar(10)
+  for_logradouro          String?                @db.VarChar(200)
+  for_numero              String?                @db.VarChar(20)
+  for_bairro              String?                @db.VarChar(100)
+  for_cidade              String?                @db.VarChar(100)
+  for_estado              String?                @db.Char(2)
+  for_status              fornecedor_for_status  @default(ATIVO)
+  created_at              DateTime               @default(now()) @db.Timestamp(0)
+  updated_at              DateTime               @default(now()) @db.Timestamp(0)
   despesa_operacional     despesa_operacional[]
-  categoria_fornecedor    categoria_fornecedor  @relation(fields: [ctf_id], references: [ctf_id], onUpdate: NoAction, map: "fk_fornecedor_categoria")
   lote_aves               lote_aves[]
   lote_estoque_insumo     lote_estoque_insumo[]
+  fornecedorCategorias    fornecedor_categoria[]
 
-  @@index([ctf_id], map: "idx_fk_fornecedor_categoria")
   @@index([for_status], map: "idx_fornecedor_status")
+}
+
+model fornecedor_categoria {
+  for_id               Int
+  ctf_id               Int
+  created_at           DateTime             @default(now()) @db.Timestamp(0)
+  fornecedor           fornecedor           @relation(fields: [for_id], references: [for_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fornecedor_categoria_fornecedor")
+  categoria_fornecedor categoria_fornecedor @relation(fields: [ctf_id], references: [ctf_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fornecedor_categoria_categoria")
+
+  @@id([for_id, ctf_id])
+  @@index([ctf_id], map: "idx_fornecedor_categoria_ctf")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -181,20 +190,21 @@ model insumo {
 }
 
 model linhagem {
-  lin_id                   Int                        @id @default(autoincrement())
-  lin_nome                 String                     @unique(map: "lin_nome") @db.VarChar(100)
-  lin_descricao            String?                    @db.VarChar(255)
-  lin_imagem_galinha_url   String?                    @db.VarChar(500)
-  lin_imagem_ovo_url       String?                    @db.VarChar(500)
-  lin_status               linhagem_lin_status?       @default(ATIVO)
-  tov_id                   Int
-  created_at               DateTime?                  @default(now()) @db.Timestamp(0)
-  updated_at               DateTime?                  @default(now()) @db.Timestamp(0)
-  cartilhas                cartilha_linhagem[]
-  cronograma_padrao_manejo cronograma_padrao_manejo[]
-  tipo_ovo                 tipo_ovo                   @relation(fields: [tov_id], references: [tov_id], onUpdate: NoAction, map: "fk_linhagem_tipo_ovo")
-  lote_aves                lote_aves[]
-  meta_linhagem_semanal    meta_linhagem_semanal[]
+  lin_id                       Int                        @id @default(autoincrement())
+  lin_nome                     String                     @unique(map: "lin_nome") @db.VarChar(100)
+  lin_descricao                String?                    @db.VarChar(255)
+  lin_imagem_galinha_url       String?                    @db.VarChar(500)
+  lin_imagem_ovo_url           String?                    @db.VarChar(500)
+  lin_densidade_maxima_aves_m2 Decimal?                   @db.Decimal(5, 2)
+  lin_status                   linhagem_lin_status?       @default(ATIVO)
+  tov_id                       Int
+  created_at                   DateTime?                  @default(now()) @db.Timestamp(0)
+  updated_at                   DateTime?                  @default(now()) @db.Timestamp(0)
+  cartilhas                    cartilha_linhagem[]
+  cronograma_padrao_manejo     cronograma_padrao_manejo[]
+  tipo_ovo                     tipo_ovo                   @relation(fields: [tov_id], references: [tov_id], onUpdate: NoAction, map: "fk_linhagem_tipo_ovo")
+  lote_aves                    lote_aves[]
+  meta_linhagem_semanal        meta_linhagem_semanal[]
 
   @@index([tov_id], map: "idx_fk_linhagem_tipo_ovo")
 }

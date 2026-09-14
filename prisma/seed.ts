@@ -27,6 +27,7 @@ type CartilhaSeed = {
 type LinhagemSeed = {
   nome: string;
   descricao: string;
+  densidadeMaximaAvesM2: number;
   imagemGalinhaUrl: string;
   imagemOvoUrl: string;
   metas: MetaLinhagem[];
@@ -421,6 +422,7 @@ const linhagensOficiais: LinhagemSeed[] = [
     nome: "Hy-Line Brown",
     descricao:
       "Poedeira comercial de ovos marrons para sistemas alternativos, livres ou caipiras. Metas baseadas no guia Hy-Line Brown em português, publicado em maio de 2026.",
+    densidadeMaximaAvesM2: 9,
     imagemGalinhaUrl: "/linhagens/hy-line-brown-galinha.png",
     imagemOvoUrl: "/linhagens/hy-line-brown-ovos.png",
     metas: metasHyLineBrown,
@@ -449,6 +451,7 @@ const linhagensOficiais: LinhagemSeed[] = [
     nome: "Embrapa 051",
     descricao:
       "Poedeira colonial brasileira de ovos castanhos, rústica e indicada para sistemas semiconfinados, caipiras ou free-range. As metas semanais são provenientes dos Quadros 9 e 10 da publicação Produção de ovos em sistemas de base ecológica, da Embrapa.",
+    densidadeMaximaAvesM2: 7,
     imagemGalinhaUrl: "/linhagens/embrapa-051-galinha.png",
     imagemOvoUrl: "/linhagens/embrapa-051-ovos.png",
     metas: metasEmbrapa051,
@@ -477,6 +480,7 @@ const linhagensOficiais: LinhagemSeed[] = [
     nome: "Lohmann Brown-Classic",
     descricao:
       "Poedeira comercial de ovos marrons para sistemas alternativos. O guia oficial informa 321 ovos por ave alojada às 72 semanas e 412 às 90 semanas.",
+    densidadeMaximaAvesM2: 8,
     imagemGalinhaUrl:
       "/linhagens/lohmann-brown-classic-galinha.png",
     imagemOvoUrl:
@@ -514,6 +518,7 @@ async function cadastrarLinhagem(
     },
     update: {
       lin_descricao: linhagemSeed.descricao,
+      lin_densidade_maxima_aves_m2:linhagemSeed.densidadeMaximaAvesM2,
       lin_imagem_galinha_url: linhagemSeed.imagemGalinhaUrl,
       lin_imagem_ovo_url: linhagemSeed.imagemOvoUrl,
       tov_id: tipoOvoMarromId,
@@ -522,6 +527,7 @@ async function cadastrarLinhagem(
     create: {
       lin_nome: linhagemSeed.nome,
       lin_descricao: linhagemSeed.descricao,
+      lin_densidade_maxima_aves_m2: linhagemSeed.densidadeMaximaAvesM2,
       lin_imagem_galinha_url: linhagemSeed.imagemGalinhaUrl,
       lin_imagem_ovo_url: linhagemSeed.imagemOvoUrl,
       tov_id: tipoOvoMarromId,

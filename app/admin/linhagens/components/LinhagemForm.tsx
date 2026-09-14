@@ -54,6 +54,7 @@ type LinhagemFormProps = {
         id: number;
         nome: string;
         descricao: string | null;
+        densidadeMaximaAvesM2: number | null;
         imagemGalinhaUrl: string | null;
         imagemOvoUrl: string | null;
         tipoOvoId: number;
@@ -149,9 +150,20 @@ export default function LinhagemForm(props: LinhagemFormProps) {
   const [nome, setNome] = useState(
     modo === "editar" ? props.linhagem.nome : ""
   );
-  const [descricao, setDescricao] = useState(
+    const [descricao, setDescricao] = useState(
     modo === "editar" ? (props.linhagem.descricao ?? "") : ""
   );
+
+  const [
+    densidadeMaximaAvesM2,
+    setDensidadeMaximaAvesM2,
+  ] = useState(
+    modo === "editar" &&
+      props.linhagem.densidadeMaximaAvesM2 !== null
+      ? String(props.linhagem.densidadeMaximaAvesM2)
+      : "",
+  );
+
   const [imagemGalinhaUrl, setImagemGalinhaUrl] = useState(
     modo === "editar" ? (props.linhagem.imagemGalinhaUrl ?? "") : ""
   );
@@ -185,11 +197,23 @@ export default function LinhagemForm(props: LinhagemFormProps) {
     imagemGalinhaUrl.trim()
   );
   const imagemOvoValida = caminhoImagemRegex.test(imagemOvoUrl.trim());
-  const tipoOvoSelecionado = tiposOvo.find(
+    const tipoOvoSelecionado = tiposOvo.find(
     (tipoOvo) => String(tipoOvo.tov_id) === tipoOvoId
   );
+
+  const densidadeMaximaNumero = Number(
+    densidadeMaximaAvesM2,
+  );
+  const densidadeMaximaValida =
+    densidadeMaximaAvesM2.trim() !== "" &&
+    Number.isFinite(densidadeMaximaNumero) &&
+    densidadeMaximaNumero > 0 &&
+    densidadeMaximaNumero <= 50;
+
   const identificacaoConcluida =
-    nome.trim().length > 0 && tipoOvoId.length > 0;
+    nome.trim().length > 0 &&
+    tipoOvoId.length > 0 &&
+    densidadeMaximaValida;
   const imagensConcluidas = imagemGalinhaValida && imagemOvoValida;
   const cartilhasConcluidas =
     cartilhas.length > 0 &&
@@ -328,7 +352,7 @@ export default function LinhagemForm(props: LinhagemFormProps) {
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
+            <div className="sm:col-span-2">
               <label
                 htmlFor="nome"
                 className="text-sm font-semibold text-gray-700"
@@ -377,7 +401,49 @@ export default function LinhagemForm(props: LinhagemFormProps) {
                     {tipoOvo.tov_nome}
                   </option>
                 ))}
-              </select>
+                            </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="densidadeMaximaAvesM2"
+                className="text-sm font-semibold text-gray-700"
+              >
+                Densidade máxima
+              </label>
+
+              <div className="relative mt-2">
+                <input
+                  id="densidadeMaximaAvesM2"
+                  name="densidadeMaximaAvesM2"
+                  type="number"
+                  required
+                  min="0.01"
+                  max="50"
+                  step="0.01"
+                  inputMode="decimal"
+                  aria-describedby="ajuda-densidade-maxima"
+                  placeholder="Ex.: 9"
+                  value={densidadeMaximaAvesM2}
+                  onChange={(event) =>
+                    setDensidadeMaximaAvesM2(
+                      event.target.value,
+                    )
+                  }
+                  className="w-full rounded-md border border-gray-300 px-3 py-2.5 pr-24 text-sm text-gray-900 outline-none transition focus:border-[#1B3B32] focus:ring-2 focus:ring-[#1B3B32]/20"
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium text-gray-500">
+                  aves/m²
+                </span>
+              </div>
+
+              <p
+                id="ajuda-densidade-maxima"
+                className="mt-1 text-xs text-gray-500"
+              >
+                Limite técnico usado para calcular a capacidade dos
+                galpões.
+              </p>
             </div>
 
             <div className="sm:col-span-2">
@@ -863,9 +929,20 @@ export default function LinhagemForm(props: LinhagemFormProps) {
               <h2 className="mt-2 break-words text-lg font-bold text-gray-900">
                 {nome.trim() || "Nova linhagem"}
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
+                            <p className="mt-1 text-sm text-gray-500">
                 {tipoOvoSelecionado?.tov_nome ??
                   "Tipo de ovo não selecionado"}
+              </p>
+
+              <p className="mt-1 text-sm font-medium text-[#1B3B32]">
+                {densidadeMaximaValida
+                  ? `${densidadeMaximaNumero.toLocaleString(
+                      "pt-BR",
+                      {
+                        maximumFractionDigits: 2,
+                      },
+                    )} aves/m²`
+                  : "Densidade não informada"}
               </p>
             </div>
             <Egg aria-hidden="true" className="h-6 w-6 text-[#1B3B32]" />
@@ -931,7 +1008,7 @@ export default function LinhagemForm(props: LinhagemFormProps) {
                   Identificação
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">
-                  Nome e tipo de ovo
+                  Nome, tipo de ovo e densidade máxima
                 </p>
               </div>
             </li>
