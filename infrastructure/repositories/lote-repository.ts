@@ -52,11 +52,13 @@ const selectLoteDetalhado = {
   lta_idade_inicial: true,
   lta_fase: true,
   lta_status: true,
+  lta_data_encerramento: true,
   created_at: true,
   linhagem: {
     select: {
       lin_id: true,
       lin_nome: true,
+      lin_densidade_maxima_aves_m2: true,
     },
   },
   galpao: {
@@ -76,6 +78,14 @@ const selectLoteDetalhado = {
   usuario: {
     select: {
       usu_nome: true,
+    },
+  },
+  mortalidade_descarte: {
+    where: {
+      mor_status_registro: "ATIVO",
+    },
+    select: {
+      mor_quantidade: true,
     },
   },
 } as const;

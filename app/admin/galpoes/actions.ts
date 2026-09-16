@@ -19,11 +19,12 @@ export type AtualizarGalpaoActionState = {
 
 export type AlterarStatusGalpaoActionState = {
   erro?: string;
+  sucesso?: boolean;
 };
 
 export async function criarGalpaoAction(
   _prevState: CriarGalpaoActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CriarGalpaoActionState> {
   const session = await auth();
 
@@ -56,7 +57,7 @@ export async function criarGalpaoAction(
 
 export async function atualizarGalpaoAction(
   _prevState: AtualizarGalpaoActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AtualizarGalpaoActionState> {
   const session = await auth();
 
@@ -90,7 +91,7 @@ export async function atualizarGalpaoAction(
 
 export async function alterarStatusGalpaoAction(
   _prevState: AlterarStatusGalpaoActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AlterarStatusGalpaoActionState> {
   const session = await auth();
 
@@ -106,9 +107,13 @@ export async function alterarStatusGalpaoAction(
     };
   }
 
+  const galpaoId = Number(formData.get("id"));
+
   const resultado = await alterarStatusGalpao({
-    id: Number(formData.get("id")),
-    status: String(formData.get("status") ?? "") as StatusGalpao,
+    id: galpaoId,
+    status: String(
+      formData.get("status") ?? "",
+    ) as StatusGalpao,
   });
 
   if (!resultado.sucesso) {
@@ -118,6 +123,9 @@ export async function alterarStatusGalpaoAction(
   }
 
   revalidatePath("/admin/galpoes");
+  revalidatePath(`/admin/galpoes/${galpaoId}`);
 
-  return {};
+  return {
+    sucesso: true,
+  };
 }

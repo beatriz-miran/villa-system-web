@@ -446,21 +446,77 @@ model movimento_ovo {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model ocorrencia_saude {
-  oco_id                  Int       @id @default(autoincrement())
-  oco_data                DateTime  @db.Date
-  oco_hora                DateTime? @db.Time(0)
-  oco_descricao           String    @db.VarChar(255)
-  oco_sintomas_observados String?   @db.Text
+  oco_id                  Int                            @id @default(autoincrement())
+  oco_data                DateTime                       @db.Date
+  oco_hora                DateTime?                      @db.Time(0)
+  oco_tipo                ocorrencia_saude_oco_tipo      @default(SINTOMA)
+  oco_status              ocorrencia_saude_oco_status    @default(EM_OBSERVACAO)
+  oco_gravidade           ocorrencia_saude_oco_gravidade @default(BAIXA)
+  oco_descricao           String                         @db.VarChar(255)
+  oco_sintomas_observados String?                        @db.Text
   oco_num_aves_afetadas   Int?
+  oco_conduta_inicial     String?                        @db.Text
+  oco_data_encerramento   DateTime?                      @db.Date
+  oco_desfecho            ocorrencia_saude_oco_desfecho?
+  oco_observacao_desfecho String?                        @db.Text
   lta_id                  Int
   usu_id                  Int
-  created_at              DateTime? @default(now()) @db.Timestamp(0)
-  updated_at              DateTime? @default(now()) @db.Timestamp(0)
-  lote_aves               lote_aves @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_oco_lote")
-  usuario                 usuario   @relation(fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_oco_usuario")
+  created_at              DateTime?                      @default(now()) @db.Timestamp(0)
+  updated_at              DateTime?                      @default(now()) @db.Timestamp(0)
+  lote_aves               lote_aves                      @relation(fields: [lta_id], references: [lta_id], onUpdate: NoAction, map: "fk_oco_lote")
+  usuario                 usuario                        @relation(fields: [usu_id], references: [usu_id], onUpdate: NoAction, map: "fk_oco_usuario")
+  acompanhamento_saude    acompanhamento_saude[]
 
   @@index([lta_id], map: "idx_fk_oco_lote")
   @@index([usu_id], map: "idx_fk_oco_usuario")
+  @@index([lta_id, oco_status], map: "idx_oco_lote_status")
+}
+
+model acompanhamento_saude {
+  acs_id                Int                         @id @default(autoincrement())
+  acs_data              DateTime                    @db.Date
+  acs_status            ocorrencia_saude_oco_status
+  acs_num_aves_afetadas Int?
+  acs_observacao        String                      @db.Text
+  acs_tratamento        String?                     @db.Text
+  oco_id                Int
+  usu_id                Int
+  created_at            DateTime                    @default(now()) @db.Timestamp(0)
+  updated_at            DateTime                    @default(now()) @updatedAt @db.Timestamp(0)
+  ocorrencia_saude      ocorrencia_saude            @relation(fields: [oco_id], references: [oco_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_acs_ocorrencia")
+  usuario               usuario                     @relation(fields: [usu_id], references: [usu_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_acs_usuario")
+
+  @@index([oco_id, acs_data], map: "idx_acs_ocorrencia_data")
+  @@index([usu_id], map: "idx_fk_acs_usuario")
+}
+
+enum ocorrencia_saude_oco_tipo {
+  SINTOMA
+  DOENCA_SUSPEITA
+  DOENCA_CONFIRMADA
+  LESAO
+  OUTRO
+}
+
+enum ocorrencia_saude_oco_status {
+  EM_OBSERVACAO
+  EM_QUARENTENA
+  EM_TRATAMENTO
+  ENCERRADA
+}
+
+enum ocorrencia_saude_oco_gravidade {
+  BAIXA
+  MODERADA
+  ALTA
+  CRITICA
+}
+
+enum ocorrencia_saude_oco_desfecho {
+  RECUPERACAO
+  MORTALIDADE
+  DESCARTE
+  OUTRO
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -570,6 +626,7 @@ model usuario {
   movimento_ovo_movimento_ovo_usu_idTousuario                          movimento_ovo[]           @relation("movimento_ovo_usu_idTousuario")
   movimento_ovo_movimento_ovo_mvo_estornado_porTousuario               movimento_ovo[]           @relation("movimento_ovo_mvo_estornado_porTousuario")
   ocorrencia_saude                                                     ocorrencia_saude[]
+  acompanhamento_saude                                                 acompanhamento_saude[]
   receita_venda_receita_venda_usu_idTousuario                          receita_venda[]           @relation("receita_venda_usu_idTousuario")
   receita_venda_receita_venda_rcv_estornado_porTousuario               receita_venda[]           @relation("receita_venda_rcv_estornado_porTousuario")
   tarefa_lote                                                          tarefa_lote[]

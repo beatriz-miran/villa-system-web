@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 
 import {
   alterarStatusUsuarioAction,
-  AlterarStatusUsuarioActionState,
+  type AlterarStatusUsuarioActionState,
 } from "@/app/admin/usuarios/actions";
 
 type AlterarStatusUsuarioButtonProps = {
@@ -20,7 +20,7 @@ export default function AlterarStatusUsuarioButton({
 }: AlterarStatusUsuarioButtonProps) {
   const [state, formAction, pendente] = useActionState(
     alterarStatusUsuarioAction,
-    estadoInicial
+    estadoInicial,
   );
 
   const [erroOculto, setErroOculto] = useState(false);
@@ -53,11 +53,12 @@ export default function AlterarStatusUsuarioButton({
     <>
       <form
         action={formAction}
+        className="shrink-0"
         onSubmit={(event) => {
           if (
             usuarioAtivo &&
             !window.confirm(
-              "Tem certeza que deseja desativar este usuário?"
+              "Tem certeza que deseja desativar este usuário?",
             )
           ) {
             event.preventDefault();
@@ -82,10 +83,10 @@ export default function AlterarStatusUsuarioButton({
         <button
           type="submit"
           disabled={pendente}
-          className={`text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`w-24 rounded-md border px-3 py-2 text-center text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
             usuarioAtivo
-              ? "text-red-600 hover:underline"
-              : "text-[#1B3B32] hover:underline"
+              ? "border-red-200 bg-white text-red-600 hover:bg-red-50"
+              : "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
           }`}
         >
           {pendente
@@ -96,7 +97,7 @@ export default function AlterarStatusUsuarioButton({
         </button>
       </form>
 
-      {erroVisivel && (
+      {erroVisivel ? (
         <div
           role="alert"
           aria-live="polite"
@@ -130,7 +131,7 @@ export default function AlterarStatusUsuarioButton({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
