@@ -38,7 +38,7 @@ export const fornecedorSchema = z.object({
     .max(20, "O telefone principal deve possuir no máximo 20 caracteres.")
     .refine(
       telefoneValido,
-      "Informe um telefone principal com DDD e 10 ou 11 dígitos."
+      "Informe um telefone principal com DDD e 10 ou 11 dígitos.",
     ),
 
   telefoneSecundario: z
@@ -47,7 +47,7 @@ export const fornecedorSchema = z.object({
     .max(20, "O telefone secundário deve possuir no máximo 20 caracteres.")
     .refine(
       (telefone) => telefone.length === 0 || telefoneValido(telefone),
-      "Informe um telefone secundário com DDD e 10 ou 11 dígitos."
+      "Informe um telefone secundário com DDD e 10 ou 11 dígitos.",
     )
     .optional(),
 
@@ -57,7 +57,7 @@ export const fornecedorSchema = z.object({
     .max(10, "O CEP deve possuir no máximo 10 caracteres.")
     .refine(
       (cep) => cep.length === 0 || cepValido(cep),
-      "Informe um CEP válido com oito dígitos."
+      "Informe um CEP válido com oito dígitos.",
     )
     .optional(),
 
@@ -92,12 +92,20 @@ export const fornecedorSchema = z.object({
     .refine(ufValida, "Selecione uma UF válida.")
     .optional(),
 
-  categoriaId: z
-    .number({
-      error: "Selecione uma categoria de fornecimento válida.",
-    })
-    .int()
-    .positive("Selecione uma categoria de fornecimento válida."),
+  categoriaIds: z
+    .array(
+      z
+        .number({
+          error: "Selecione categorias de fornecimento válidas.",
+        })
+        .int()
+        .positive("Selecione categorias de fornecimento válidas."),
+    )
+    .min(1, "Selecione pelo menos uma categoria de fornecimento.")
+    .refine(
+      (categorias) => new Set(categorias).size === categorias.length,
+      "Não selecione a mesma categoria mais de uma vez.",
+    ),
 });
 
 export type FornecedorInput = z.infer<typeof fornecedorSchema>;

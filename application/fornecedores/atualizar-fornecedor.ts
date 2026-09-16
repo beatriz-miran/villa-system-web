@@ -37,7 +37,7 @@ export type AtualizarFornecedorResultado =
     };
 
 export async function atualizarFornecedor(
-  dados: AtualizarFornecedorInput
+  dados: AtualizarFornecedorInput,
 ): Promise<AtualizarFornecedorResultado> {
   const validacao = atualizarFornecedorSchema.safeParse(dados);
 
@@ -64,7 +64,7 @@ export async function atualizarFornecedor(
     bairro,
     cidade,
     estado,
-    categoriaId,
+    categoriaIds,
   } = validacao.data;
 
   const cnpjFormatado = formatarCnpj(cnpj);
@@ -127,7 +127,7 @@ export async function atualizarFornecedor(
       bairro: bairro || null,
       cidade: cidade || null,
       estado: estado ? estado.toUpperCase() : null,
-      categoriaId,
+      categoriaIds,
     });
 
     return {
@@ -146,7 +146,7 @@ export async function atualizarFornecedor(
       return {
         sucesso: false,
         mensagem:
-          "A categoria de fornecimento selecionada não existe mais.",
+          "Uma das categorias de fornecimento selecionadas não existe mais.",
       };
     }
 
@@ -154,7 +154,7 @@ export async function atualizarFornecedor(
       return {
         sucesso: false,
         mensagem:
-          "O fornecedor ou a categoria selecionada não existe mais.",
+          "O fornecedor ou uma das categorias selecionadas não existe mais.",
       };
     }
 

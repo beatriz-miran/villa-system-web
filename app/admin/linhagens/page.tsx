@@ -40,6 +40,7 @@ export default async function LinhagensPage() {
           </div>
         ) : (
           <>
+            {/* Mobile */}
             <div className="space-y-3 md:hidden">
               {linhagens.map((linhagem) => (
                 <article
@@ -68,17 +69,17 @@ export default async function LinhagensPage() {
                     </span>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
                     <Link
                       href={`/admin/linhagens/${linhagem.lin_id}`}
-                      className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                      className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
                     >
                       Visualizar
                     </Link>
 
                     <Link
                       href={`/admin/linhagens/${linhagem.lin_id}/editar`}
-                      className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                      className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                     >
                       Editar
                     </Link>
@@ -92,6 +93,7 @@ export default async function LinhagensPage() {
               ))}
             </div>
 
+            {/* Tablet e desktop */}
             <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -109,7 +111,7 @@ export default async function LinhagensPage() {
                         Status
                       </th>
 
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="w-[22rem] px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Ações
                       </th>
                     </tr>
@@ -138,18 +140,18 @@ export default async function LinhagensPage() {
                           </span>
                         </td>
 
-                        <td className="px-5 py-4">
-                          <div className="flex items-center justify-end gap-4">
+                        <td className="w-[22rem] px-5 py-4">
+                          <div className="flex items-center justify-center gap-3">
                             <Link
                               href={`/admin/linhagens/${linhagem.lin_id}`}
-                              className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                              className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
                             >
                               Visualizar
                             </Link>
 
                             <Link
                               href={`/admin/linhagens/${linhagem.lin_id}/editar`}
-                              className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                              className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                             >
                               Editar
                             </Link>

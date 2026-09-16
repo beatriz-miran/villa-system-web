@@ -3,6 +3,38 @@ import Link from "next/link";
 import { listarFornecedores } from "@/application/fornecedores/listar-fornecedores";
 import AlterarStatusFornecedorButton from "@/app/admin/fornecedores/components/AlterarStatusFornecedorButton";
 
+function CategoriasFornecedor({
+  categorias,
+}: {
+  categorias: {
+    categoria_fornecedor: {
+      ctf_id: number;
+      ctf_descricao: string;
+    };
+  }[];
+}) {
+  if (categorias.length === 0) {
+    return (
+      <span className="text-gray-400">
+        Sem categoria
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {categorias.map((relacao) => (
+        <span
+          key={relacao.categoria_fornecedor.ctf_id}
+          className="rounded-full bg-[#EAF4EF] px-2.5 py-1 text-xs font-medium text-[#1B3B32]"
+        >
+          {relacao.categoria_fornecedor.ctf_descricao}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default async function FornecedoresPage() {
   const fornecedores = await listarFornecedores();
 
@@ -19,7 +51,8 @@ export default async function FornecedoresPage() {
           </h1>
 
           <p className="mt-1 text-sm text-gray-500">
-            Consulte e gerencie os fornecedores de aves e insumos cadastrados.
+            Consulte e gerencie os fornecedores de aves e insumos
+            cadastrados.
           </p>
         </div>
 
@@ -49,12 +82,18 @@ export default async function FornecedoresPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h2 className="truncate font-bold text-gray-900">
+                      <h2 className="font-bold text-gray-900">
                         {fornecedor.for_razao_social}
                       </h2>
 
-                      <p className="mt-1 text-sm text-gray-500">
-                        {fornecedor.for_cnpj}
+                      {fornecedor.for_nome_fantasia ? (
+                        <p className="mt-1 text-sm text-gray-500">
+                          {fornecedor.for_nome_fantasia}
+                        </p>
+                      ) : null}
+
+                      <p className="mt-1 whitespace-nowrap text-xs tabular-nums text-gray-500">
+                        CNPJ: {fornecedor.for_cnpj}
                       </p>
                     </div>
 
@@ -71,18 +110,29 @@ export default async function FornecedoresPage() {
 
                   <div className="mt-4 border-t border-gray-100 pt-3">
                     <p className="text-xs text-gray-400">
-                      Categoria
+                      Categorias
                     </p>
 
-                    <p className="mt-1 text-sm font-medium text-gray-700">
-                      {fornecedor.categoria_fornecedor.ctf_descricao}
-                    </p>
+                    <div className="mt-2">
+                      <CategoriasFornecedor
+                        categorias={
+                          fornecedor.fornecedorCategorias
+                        }
+                      />
+                    </div>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-4 border-t border-gray-100 pt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
+                    <Link
+                      href={`/admin/fornecedores/${fornecedor.for_id}`}
+                      className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
+                    >
+                      Visualizar
+                    </Link>
+
                     <Link
                       href={`/admin/fornecedores/${fornecedor.for_id}/editar`}
-                      className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                      className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                     >
                       Editar
                     </Link>
@@ -103,22 +153,18 @@ export default async function FornecedoresPage() {
                   <thead className="border-b border-gray-200 bg-gray-50">
                     <tr>
                       <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Razão social
+                        Fornecedor
                       </th>
 
                       <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        CNPJ
+                        Categorias
                       </th>
 
-                      <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Categoria
-                      </th>
-
-                      <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="w-28 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Status
                       </th>
 
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="w-[22rem] px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Ações
                       </th>
                     </tr>
@@ -127,25 +173,31 @@ export default async function FornecedoresPage() {
                   <tbody className="divide-y divide-gray-100">
                     {fornecedores.map((fornecedor) => (
                       <tr key={fornecedor.for_id}>
-                        <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                          {fornecedor.for_razao_social}
+                        <td className="px-5 py-4">
+                          <p className="text-sm font-medium text-gray-900">
+                            {fornecedor.for_razao_social}
+                          </p>
 
-                          {fornecedor.for_nome_fantasia && (
-                            <p className="mt-0.5 text-xs font-normal text-gray-500">
+                          {fornecedor.for_nome_fantasia ? (
+                            <p className="mt-1 text-xs text-gray-500">
                               {fornecedor.for_nome_fantasia}
                             </p>
-                          )}
-                        </td>
+                          ) : null}
 
-                        <td className="px-5 py-4 text-sm text-gray-600">
-                          {fornecedor.for_cnpj}
-                        </td>
-
-                        <td className="px-5 py-4 text-sm text-gray-600">
-                          {fornecedor.categoria_fornecedor.ctf_descricao}
+                          <p className="mt-1 whitespace-nowrap text-xs tabular-nums text-gray-500">
+                            CNPJ: {fornecedor.for_cnpj}
+                          </p>
                         </td>
 
                         <td className="px-5 py-4">
+                          <CategoriasFornecedor
+                            categorias={
+                              fornecedor.fornecedorCategorias
+                            }
+                          />
+                        </td>
+
+                        <td className="w-28 px-5 py-4">
                           <span
                             className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                               fornecedor.for_status === "ATIVO"
@@ -157,11 +209,18 @@ export default async function FornecedoresPage() {
                           </span>
                         </td>
 
-                        <td className="px-5 py-4">
-                          <div className="flex items-center justify-end gap-4">
+                        <td className="w-[22rem] px-5 py-4">
+                          <div className="flex items-center justify-center gap-3">
+                            <Link
+                              href={`/admin/fornecedores/${fornecedor.for_id}`}
+                              className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
+                            >
+                              Visualizar
+                            </Link>
+
                             <Link
                               href={`/admin/fornecedores/${fornecedor.for_id}/editar`}
-                              className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                              className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                             >
                               Editar
                             </Link>

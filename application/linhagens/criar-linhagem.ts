@@ -13,6 +13,7 @@ import {
   cartilhasLinhagemSchema,
   existemUrlsCartilhasDuplicadas,
 } from "./cartilha-linhagem-schema";
+import { densidadeMaximaLinhagemSchema } from "./densidade-linhagem-schema";
 import { imagemLinhagemSchema } from "./imagem-linhagem-schema";
 import {
   existemSemanasDuplicadas,
@@ -31,6 +32,8 @@ const criarLinhagemSchema = z.object({
     .trim()
     .max(255, "A descrição deve possuir no máximo 255 caracteres.")
     .optional(),
+
+  densidadeMaximaAvesM2: densidadeMaximaLinhagemSchema,
 
   imagemGalinhaUrl: imagemLinhagemSchema,
 
@@ -62,7 +65,7 @@ export type CriarLinhagemResultado =
     };
 
 export async function criarLinhagem(
-  dados: CriarLinhagemInput
+  dados: CriarLinhagemInput,
 ): Promise<CriarLinhagemResultado> {
   const validacao = criarLinhagemSchema.safeParse(dados);
 
@@ -78,6 +81,7 @@ export async function criarLinhagem(
   const {
     nome,
     descricao,
+    densidadeMaximaAvesM2,
     imagemGalinhaUrl,
     imagemOvoUrl,
     tipoOvoId,
@@ -123,6 +127,7 @@ export async function criarLinhagem(
     await criarLinhagemRepository({
       nome,
       descricao: descricao || null,
+      densidadeMaximaAvesM2,
       imagemGalinhaUrl: imagemGalinhaUrl || null,
       imagemOvoUrl: imagemOvoUrl || null,
       tipoOvoId,

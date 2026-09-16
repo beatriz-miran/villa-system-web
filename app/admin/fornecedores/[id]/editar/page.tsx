@@ -73,7 +73,9 @@ export default async function EditarFornecedorPage({
             bairro: fornecedor.for_bairro,
             cidade: fornecedor.for_cidade,
             estado: fornecedor.for_estado,
-            categoriaId: fornecedor.ctf_id,
+            categoriaIds: fornecedor.fornecedorCategorias.map(
+              (relacao) => relacao.ctf_id,
+            ),
           }}
         />
 

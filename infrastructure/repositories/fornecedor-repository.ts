@@ -13,7 +13,7 @@ type CriarFornecedorDados = {
   bairro: string | null;
   cidade: string | null;
   estado: string | null;
-  categoriaId: number;
+  categoriaIds: number[];
 };
 
 type AtualizarFornecedorDados = CriarFornecedorDados;
@@ -35,14 +35,28 @@ const selectFornecedor = {
   for_cidade: true,
   for_estado: true,
   for_status: true,
-  ctf_id: true,
-  categoria_fornecedor: {
+  fornecedorCategorias: {
     select: {
       ctf_id: true,
-      ctf_descricao: true,
+      categoria_fornecedor: {
+        select: {
+          ctf_id: true,
+          ctf_descricao: true,
+        },
+      },
     },
   },
 } as const;
+
+function criarCategorias(categoriaIds: number[]) {
+  return categoriaIds.map((ctf_id) => ({
+    categoria_fornecedor: {
+      connect: {
+        ctf_id,
+      },
+    },
+  }));
+}
 
 export async function listarFornecedores() {
   return prisma.fornecedor.findMany({
@@ -57,6 +71,13 @@ export async function listarFornecedoresAtivos() {
   return prisma.fornecedor.findMany({
     where: {
       for_status: "ATIVO",
+      fornecedorCategorias: {
+        some: {
+          categoria_fornecedor: {
+            ctf_descricao: "Aves",
+          },
+        },
+      },
     },
     select: {
       for_id: true,
@@ -100,9 +121,7 @@ export async function buscarFornecedorPorEmail(email: string) {
   });
 }
 
-export async function criarFornecedor(
-  dados: CriarFornecedorDados
-) {
+export async function criarFornecedor(dados: CriarFornecedorDados) {
   return prisma.fornecedor.create({
     data: {
       for_razao_social: dados.razaoSocial,
@@ -117,8 +136,10 @@ export async function criarFornecedor(
       for_bairro: dados.bairro,
       for_cidade: dados.cidade,
       for_estado: dados.estado,
-      ctf_id: dados.categoriaId,
       for_status: "ATIVO",
+      fornecedorCategorias: {
+        create: criarCategorias(dados.categoriaIds),
+      },
     },
     select: selectFornecedor,
   });
@@ -126,7 +147,7 @@ export async function criarFornecedor(
 
 export async function atualizarFornecedor(
   id: number,
-  dados: AtualizarFornecedorDados
+  dados: AtualizarFornecedorDados,
 ) {
   return prisma.fornecedor.update({
     where: {
@@ -145,8 +166,11 @@ export async function atualizarFornecedor(
       for_bairro: dados.bairro,
       for_cidade: dados.cidade,
       for_estado: dados.estado,
-      ctf_id: dados.categoriaId,
       updated_at: new Date(),
+      fornecedorCategorias: {
+        deleteMany: {},
+        create: criarCategorias(dados.categoriaIds),
+      },
     },
     select: selectFornecedor,
   });
@@ -154,7 +178,7 @@ export async function atualizarFornecedor(
 
 export async function atualizarStatusFornecedor(
   id: number,
-  status: FornecedorStatus
+  status: FornecedorStatus,
 ) {
   return prisma.fornecedor.update({
     where: {

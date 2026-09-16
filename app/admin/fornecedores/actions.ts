@@ -34,8 +34,12 @@ function extrairCampoOpcional(formData: FormData, campo: string) {
   return valor.length > 0 ? valor : undefined;
 }
 
+function extrairCategorias(formData: FormData) {
+  return formData.getAll("categoriaIds").map((valor) => Number(valor));
+}
+
 export async function buscarDadosCnpjAction(
-  cnpj: string
+  cnpj: string,
 ): Promise<BuscarDadosCnpjResultado> {
   const session = await auth();
 
@@ -57,7 +61,7 @@ export async function buscarDadosCnpjAction(
 }
 
 export async function buscarEnderecoPorCepAction(
-  cep: string
+  cep: string,
 ): Promise<BuscarEnderecoPorCepResultado> {
   const session = await auth();
 
@@ -80,7 +84,7 @@ export async function buscarEnderecoPorCepAction(
 
 export async function criarFornecedorAction(
   _prevState: CriarFornecedorActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CriarFornecedorActionState> {
   const session = await auth();
 
@@ -104,7 +108,7 @@ export async function criarFornecedorAction(
     telefonePrincipal: String(formData.get("telefonePrincipal") ?? ""),
     telefoneSecundario: extrairCampoOpcional(
       formData,
-      "telefoneSecundario"
+      "telefoneSecundario",
     ),
     cep: extrairCampoOpcional(formData, "cep"),
     logradouro: extrairCampoOpcional(formData, "logradouro"),
@@ -112,7 +116,7 @@ export async function criarFornecedorAction(
     bairro: extrairCampoOpcional(formData, "bairro"),
     cidade: extrairCampoOpcional(formData, "cidade"),
     estado: extrairCampoOpcional(formData, "estado"),
-    categoriaId: Number(formData.get("categoriaId")),
+    categoriaIds: extrairCategorias(formData),
   });
 
   if (!resultado.sucesso) {
@@ -127,7 +131,7 @@ export async function criarFornecedorAction(
 
 export async function atualizarFornecedorAction(
   _prevState: AtualizarFornecedorActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AtualizarFornecedorActionState> {
   const session = await auth();
 
@@ -152,7 +156,7 @@ export async function atualizarFornecedorAction(
     telefonePrincipal: String(formData.get("telefonePrincipal") ?? ""),
     telefoneSecundario: extrairCampoOpcional(
       formData,
-      "telefoneSecundario"
+      "telefoneSecundario",
     ),
     cep: extrairCampoOpcional(formData, "cep"),
     logradouro: extrairCampoOpcional(formData, "logradouro"),
@@ -160,7 +164,7 @@ export async function atualizarFornecedorAction(
     bairro: extrairCampoOpcional(formData, "bairro"),
     cidade: extrairCampoOpcional(formData, "cidade"),
     estado: extrairCampoOpcional(formData, "estado"),
-    categoriaId: Number(formData.get("categoriaId")),
+    categoriaIds: extrairCategorias(formData),
   });
 
   if (!resultado.sucesso) {
@@ -175,7 +179,7 @@ export async function atualizarFornecedorAction(
 
 export async function alterarStatusFornecedorAction(
   _prevState: AlterarStatusFornecedorActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AlterarStatusFornecedorActionState> {
   const session = await auth();
 

@@ -65,7 +65,9 @@ export default async function GalpoesPage() {
                       <p className="mt-1 text-sm text-gray-500">
                         {Number(galpao.gal_area_m2).toLocaleString(
                           "pt-BR",
-                          { minimumFractionDigits: 2 }
+                          {
+                            minimumFractionDigits: 2,
+                          },
                         )}{" "}
                         m²
                       </p>
@@ -73,17 +75,30 @@ export default async function GalpoesPage() {
 
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                        statusPillClassName[galpao.gal_status ?? "ATIVO"]
+                        statusPillClassName[
+                          galpao.gal_status ?? "ATIVO"
+                        ]
                       }`}
                     >
-                      {statusGalpaoLabel[galpao.gal_status ?? "ATIVO"]}
+                      {
+                        statusGalpaoLabel[
+                          galpao.gal_status ?? "ATIVO"
+                        ]
+                      }
                     </span>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-4 border-t border-gray-100 pt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
+                    <Link
+                      href={`/admin/galpoes/${galpao.gal_id}`}
+                      className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
+                    >
+                      Visualizar
+                    </Link>
+
                     <Link
                       href={`/admin/galpoes/${galpao.gal_id}/editar`}
-                      className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                      className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                     >
                       Editar
                     </Link>
@@ -115,7 +130,7 @@ export default async function GalpoesPage() {
                         Status
                       </th>
 
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="w-[23rem] px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Ações
                       </th>
                     </tr>
@@ -131,7 +146,9 @@ export default async function GalpoesPage() {
                         <td className="px-5 py-4 text-sm text-gray-600">
                           {Number(galpao.gal_area_m2).toLocaleString(
                             "pt-BR",
-                            { minimumFractionDigits: 2 }
+                            {
+                              minimumFractionDigits: 2,
+                            },
                           )}
                         </td>
 
@@ -143,15 +160,26 @@ export default async function GalpoesPage() {
                               ]
                             }`}
                           >
-                            {statusGalpaoLabel[galpao.gal_status ?? "ATIVO"]}
+                            {
+                              statusGalpaoLabel[
+                                galpao.gal_status ?? "ATIVO"
+                              ]
+                            }
                           </span>
                         </td>
 
-                        <td className="px-5 py-4">
-                          <div className="flex items-center justify-end gap-4">
+                        <td className="w-[23rem] px-5 py-4">
+                          <div className="flex items-center justify-center gap-3">
+                            <Link
+                              href={`/admin/galpoes/${galpao.gal_id}`}
+                              className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
+                            >
+                              Visualizar
+                            </Link>
+
                             <Link
                               href={`/admin/galpoes/${galpao.gal_id}/editar`}
-                              className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                              className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                             >
                               Editar
                             </Link>

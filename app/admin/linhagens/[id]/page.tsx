@@ -98,6 +98,28 @@ export default async function VisualizarLinhagemPage({
               </dd>
             </div>
 
+                        <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Densidade máxima
+              </dt>
+
+              <dd className="mt-1 text-sm text-gray-900">
+                {linhagem.lin_densidade_maxima_aves_m2 ===
+                null
+                  ? "Não informada"
+                  : `${Number(
+                      linhagem.lin_densidade_maxima_aves_m2,
+                    ).toLocaleString("pt-BR", {
+                      maximumFractionDigits: 2,
+                    })} aves/m²`}
+              </dd>
+
+              <dd className="mt-1 text-xs text-gray-500">
+                Referência usada para calcular a capacidade
+                máxima dos galpões no cadastro de lotes.
+              </dd>
+            </div>
+
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Descrição

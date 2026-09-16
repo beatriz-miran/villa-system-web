@@ -25,7 +25,7 @@ export type CriarFornecedorResultado =
     };
 
 export async function criarFornecedor(
-  dados: CriarFornecedorInput
+  dados: CriarFornecedorInput,
 ): Promise<CriarFornecedorResultado> {
   const validacao = fornecedorSchema.safeParse(dados);
 
@@ -51,7 +51,7 @@ export async function criarFornecedor(
     bairro,
     cidade,
     estado,
-    categoriaId,
+    categoriaIds,
   } = validacao.data;
 
   const cnpjFormatado = formatarCnpj(cnpj);
@@ -97,7 +97,7 @@ export async function criarFornecedor(
       bairro: bairro || null,
       cidade: cidade || null,
       estado: estado ? estado.toUpperCase() : null,
-      categoriaId,
+      categoriaIds,
     });
 
     return {
@@ -119,7 +119,7 @@ export async function criarFornecedor(
       return {
         sucesso: false,
         mensagem:
-          "A categoria de fornecimento selecionada não existe mais.",
+          "Uma das categorias de fornecimento selecionadas não existe mais.",
       };
     }
 
