@@ -1,10 +1,7 @@
 import { z } from "zod";
 
 import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
-import {
-  buscarLoteParaRegistrarBaixa,
-  registrarBaixaLote as registrarBaixaLoteRepository,
-} from "@/infrastructure/repositories/mortalidade-descarte-repository";
+import { executarRegistroBaixaComBloqueio } from "@/infrastructure/repositories/mortalidade-descarte-repository";
 
 import { calcularQuantidadeAtual } from "./calcular-situacao-lote";
 import {
@@ -52,7 +49,10 @@ const registrarBaixaLoteSchema = z.object({
       error: "Informe o motivo da baixa.",
     })
     .trim()
-    .min(3, "O motivo deve possuir pelo menos 3 caracteres.")
+    .min(
+      3,
+      "O motivo deve possuir pelo menos 3 caracteres.",
+    )
     .max(
       255,
       "O motivo deve possuir no máximo 255 caracteres.",
@@ -89,7 +89,10 @@ function dataEhAnterior(
   data: Date,
   dataLimite: Date,
 ) {
-  return inicioDoDiaUtc(data) < inicioDoDiaUtc(dataLimite);
+  return (
+    inicioDoDiaUtc(data) <
+    inicioDoDiaUtc(dataLimite)
+  );
 }
 
 export async function registrarBaixaLote(
@@ -125,79 +128,90 @@ export async function registrarBaixaLote(
   }
 
   try {
-    const lote =
-      await buscarLoteParaRegistrarBaixa(loteId);
-
-    if (!lote) {
-      return {
-        sucesso: false,
-        mensagem: "Lote não encontrado.",
-      };
-    }
-
-    if (lote.lta_status !== "ATIVO") {
-      return {
-        sucesso: false,
-        mensagem:
-          "Não é possível registrar baixas em um lote finalizado.",
-      };
-    }
-
-    if (
-      dataEhAnterior(
-        data,
-        lote.lta_data_alojamento,
-      )
-    ) {
-      return {
-        sucesso: false,
-        mensagem:
-          "A data da baixa não pode ser anterior à data de alojamento do lote.",
-      };
-    }
-
-    const totalBaixas =
-      lote.mortalidade_descarte.reduce(
-        (total, registro) =>
-          total + registro.mor_quantidade,
-        0,
-      );
-
-    const quantidadeAtual =
-      calcularQuantidadeAtual(
-        lote.lta_quant_inicial,
-        totalBaixas,
-      );
-
-    if (quantidadeAtual <= 0) {
-      return {
-        sucesso: false,
-        mensagem:
-          "Este lote não possui aves disponíveis para registrar uma nova baixa.",
-      };
-    }
-
-    if (quantidade > quantidadeAtual) {
-      return {
-        sucesso: false,
-        mensagem: `A quantidade informada excede o saldo atual de ${quantidadeAtual.toLocaleString(
-          "pt-BR",
-        )} aves do lote.`,
-      };
-    }
-
-    await registrarBaixaLoteRepository({
+    return await executarRegistroBaixaComBloqueio<
+      RegistrarBaixaLoteResultado
+    >(
       loteId,
-      usuarioId,
-      tipo,
-      quantidade,
-      data,
-      motivo,
-    });
+      async ({
+        buscarLoteParaRegistrarBaixa,
+        registrarBaixaLote:
+          registrarBaixaLoteRepository,
+      }) => {
+        const lote =
+          await buscarLoteParaRegistrarBaixa();
 
-    return {
-      sucesso: true,
-    };
+        if (!lote) {
+          return {
+            sucesso: false,
+            mensagem: "Lote não encontrado.",
+          };
+        }
+
+        if (lote.lta_status !== "ATIVO") {
+          return {
+            sucesso: false,
+            mensagem:
+              "Não é possível registrar baixas em um lote finalizado.",
+          };
+        }
+
+        if (
+          dataEhAnterior(
+            data,
+            lote.lta_data_alojamento,
+          )
+        ) {
+          return {
+            sucesso: false,
+            mensagem:
+              "A data da baixa não pode ser anterior à data de alojamento do lote.",
+          };
+        }
+
+        const totalBaixas =
+          lote.mortalidade_descarte.reduce(
+            (total, registro) =>
+              total + registro.mor_quantidade,
+            0,
+          );
+
+        const quantidadeAtual =
+          calcularQuantidadeAtual(
+            lote.lta_quant_inicial,
+            totalBaixas,
+          );
+
+        if (quantidadeAtual <= 0) {
+          return {
+            sucesso: false,
+            mensagem:
+              "Este lote não possui aves disponíveis para registrar uma nova baixa.",
+          };
+        }
+
+        if (quantidade > quantidadeAtual) {
+          return {
+            sucesso: false,
+            mensagem: `A quantidade informada excede o saldo atual de ${quantidadeAtual.toLocaleString(
+              "pt-BR",
+            )} aves do lote.`,
+          };
+        }
+
+        await registrarBaixaLoteRepository({
+          loteId,
+          usuarioId,
+          tipo,
+          quantidade,
+          data,
+          motivo,
+        });
+
+        return {
+          sucesso: true,
+        };
+      },
+    );
   } catch (error) {
     if (
       erroPrismaTemCodigo(error, "P2003") ||

@@ -20,26 +20,37 @@ const TENTATIVAS_MAXIMAS_CODIGO = 5;
 
 const criarLoteSchema = z.object({
   linhagemId: z
-    .number({ error: "Selecione uma linhagem válida." })
+    .number({
+      error: "Selecione uma linhagem válida.",
+    })
     .int()
     .positive("Selecione uma linhagem válida."),
 
   galpaoId: z
-    .number({ error: "Selecione um galpão válido." })
+    .number({
+      error: "Selecione um galpão válido.",
+    })
     .int()
     .positive("Selecione um galpão válido."),
 
   fornecedorId: z
-    .number({ error: "Selecione um fornecedor válido." })
+    .number({
+      error: "Selecione um fornecedor válido.",
+    })
     .int()
     .positive("Selecione um fornecedor válido."),
 
   quantidadeInicial: z
     .number({
-      error: "Informe a quantidade inicial de aves.",
+      error:
+        "Informe a quantidade inicial de aves.",
     })
-    .int("A quantidade deve ser um número inteiro.")
-    .positive("A quantidade inicial deve ser maior que zero.")
+    .int(
+      "A quantidade deve ser um número inteiro.",
+    )
+    .positive(
+      "A quantidade inicial deve ser maior que zero.",
+    )
     .max(
       500000,
       "A quantidade inicial deve ser de no máximo 500.000 aves.",
@@ -47,23 +58,34 @@ const criarLoteSchema = z.object({
 
   idadeInicialDias: z
     .number({
-      error: "Informe a idade inicial das aves em dias.",
+      error:
+        "Informe a idade inicial das aves em dias.",
     })
-    .int("A idade inicial deve ser um número inteiro.")
-    .positive("A idade inicial deve ser maior que zero.")
+    .int(
+      "A idade inicial deve ser um número inteiro.",
+    )
+    .positive(
+      "A idade inicial deve ser maior que zero.",
+    )
     .max(
       3650,
       "A idade inicial deve ser de no máximo 3.650 dias.",
     ),
 
   dataAlojamento: z.coerce.date({
-    error: "Informe uma data de alojamento válida.",
+    error:
+      "Informe uma data de alojamento válida.",
   }),
 
-  registradoPorId: z.number().int().positive(),
+  registradoPorId: z
+    .number()
+    .int()
+    .positive(),
 });
 
-export type CriarLoteInput = z.infer<typeof criarLoteSchema>;
+export type CriarLoteInput = z.infer<
+  typeof criarLoteSchema
+>;
 
 export type CriarLoteResultado =
   | {
@@ -74,10 +96,14 @@ export type CriarLoteResultado =
       mensagem: string;
     };
 
+const MENSAGEM_GALPAO_OCUPADO =
+  "Este galpão já possui um lote ativo. Encerre o lote atual antes de vincular um novo.";
+
 export async function criarLote(
   dados: CriarLoteInput,
 ): Promise<CriarLoteResultado> {
-  const validacao = criarLoteSchema.safeParse(dados);
+  const validacao =
+    criarLoteSchema.safeParse(dados);
 
   if (!validacao.success) {
     return {
@@ -98,7 +124,9 @@ export async function criarLote(
     registradoPorId,
   } = validacao.data;
 
-  if (dataAlojamentoEhFutura(dataAlojamento)) {
+  if (
+    dataAlojamentoEhFutura(dataAlojamento)
+  ) {
     return {
       sucesso: false,
       mensagem:
@@ -117,25 +145,34 @@ export async function criarLote(
     if (!linhagem) {
       return {
         sucesso: false,
-        mensagem: "A linhagem selecionada não existe.",
+        mensagem:
+          "A linhagem selecionada não existe.",
       };
     }
 
     if (linhagem.lin_status !== "ATIVO") {
       return {
         sucesso: false,
-        mensagem: "A linhagem selecionada está inativa.",
+        mensagem:
+          "A linhagem selecionada está inativa.",
       };
     }
 
     const densidadeMaximaAvesM2 =
-      linhagem.lin_densidade_maxima_aves_m2 === null
+      linhagem
+        .lin_densidade_maxima_aves_m2 ===
+      null
         ? null
-        : Number(linhagem.lin_densidade_maxima_aves_m2);
+        : Number(
+            linhagem
+              .lin_densidade_maxima_aves_m2,
+          );
 
     if (
       densidadeMaximaAvesM2 === null ||
-      !Number.isFinite(densidadeMaximaAvesM2) ||
+      !Number.isFinite(
+        densidadeMaximaAvesM2,
+      ) ||
       densidadeMaximaAvesM2 <= 0
     ) {
       return {
@@ -148,7 +185,8 @@ export async function criarLote(
     if (!galpao) {
       return {
         sucesso: false,
-        mensagem: "O galpão selecionado não existe.",
+        mensagem:
+          "O galpão selecionado não existe.",
       };
     }
 
@@ -168,7 +206,9 @@ export async function criarLote(
       };
     }
 
-    if (fornecedor.for_status !== "ATIVO") {
+    if (
+      fornecedor.for_status !== "ATIVO"
+    ) {
       return {
         sucesso: false,
         mensagem:
@@ -177,13 +217,14 @@ export async function criarLote(
     }
 
     const temLoteAtivo =
-      await existeLoteAtivoNoGalpao(galpaoId);
+      await existeLoteAtivoNoGalpao(
+        galpaoId,
+      );
 
     if (temLoteAtivo) {
       return {
         sucesso: false,
-        mensagem:
-          "Este galpão já possui um lote ativo. Encerre o lote atual antes de vincular um novo.",
+        mensagem: MENSAGEM_GALPAO_OCUPADO,
       };
     }
 
@@ -193,7 +234,10 @@ export async function criarLote(
         densidadeMaximaAvesM2,
       );
 
-    if (quantidadeInicial > capacidadeMaxima) {
+    if (
+      quantidadeInicial >
+      capacidadeMaxima
+    ) {
       return {
         sucesso: false,
         mensagem: `A quantidade informada excede a capacidade máxima de ${capacidadeMaxima} aves para este galpão e esta linhagem.`,
@@ -204,12 +248,16 @@ export async function criarLote(
 
     for (
       let tentativa = 0;
-      tentativa < TENTATIVAS_MAXIMAS_CODIGO;
+      tentativa <
+      TENTATIVAS_MAXIMAS_CODIGO;
       tentativa++
     ) {
       const candidato = gerarCodigoLote();
+
       const loteExistente =
-        await buscarLotePorCodigo(candidato);
+        await buscarLotePorCodigo(
+          candidato,
+        );
 
       if (!loteExistente) {
         codigo = candidato;
@@ -240,7 +288,22 @@ export async function criarLote(
       sucesso: true,
     };
   } catch (error) {
-    if (erroPrismaTemCodigo(error, "P2002")) {
+    if (
+      erroPrismaTemCodigo(error, "P2002")
+    ) {
+      const galpaoPassouAEstarOcupado =
+        await existeLoteAtivoNoGalpao(
+          galpaoId,
+        );
+
+      if (galpaoPassouAEstarOcupado) {
+        return {
+          sucesso: false,
+          mensagem:
+            MENSAGEM_GALPAO_OCUPADO,
+        };
+      }
+
       return {
         sucesso: false,
         mensagem:
@@ -248,7 +311,9 @@ export async function criarLote(
       };
     }
 
-    if (erroPrismaTemCodigo(error, "P2025")) {
+    if (
+      erroPrismaTemCodigo(error, "P2025")
+    ) {
       return {
         sucesso: false,
         mensagem:
@@ -256,7 +321,10 @@ export async function criarLote(
       };
     }
 
-    console.error("Erro ao cadastrar lote:", error);
+    console.error(
+      "Erro ao cadastrar lote:",
+      error,
+    );
 
     return {
       sucesso: false,
