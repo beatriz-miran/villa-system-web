@@ -1,11 +1,7 @@
 import { z } from "zod";
 
 import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
-import {
-  atualizarStatusUsuario,
-  buscarUsuarioPorId,
-  contarAdministradoresAtivos,
-} from "@/infrastructure/repositories/usuario-repository";
+import { executarAlteracaoUsuarioComBloqueio } from "@/infrastructure/repositories/usuario-repository";
 
 const alterarStatusUsuarioSchema = z.object({
   id: z
@@ -17,7 +13,7 @@ const alterarStatusUsuarioSchema = z.object({
     ["ATIVO", "INATIVO"],
     {
       error: "Status inválido.",
-    }
+    },
   ),
 
   usuarioLogadoId: z
@@ -40,7 +36,7 @@ export type AlterarStatusUsuarioResultado =
     };
 
 export async function alterarStatusUsuario(
-  dados: AlterarStatusUsuarioInput
+  dados: AlterarStatusUsuarioInput,
 ): Promise<AlterarStatusUsuarioResultado> {
   const validacao =
     alterarStatusUsuarioSchema.safeParse(dados);
@@ -61,55 +57,75 @@ export async function alterarStatusUsuario(
   } = validacao.data;
 
   try {
-    const usuario = await buscarUsuarioPorId(id);
+    const resultado =
+      await executarAlteracaoUsuarioComBloqueio<
+        AlterarStatusUsuarioResultado
+      >(async (repositorio) => {
+        const usuario =
+          await repositorio.buscarUsuarioPorId(
+            id,
+          );
 
-    if (!usuario) {
-      return {
-        sucesso: false,
-        mensagem: "Usuário não encontrado.",
-      };
-    }
+        if (!usuario) {
+          return {
+            sucesso: false,
+            mensagem: "Usuário não encontrado.",
+          };
+        }
 
-    if (
-      id === usuarioLogadoId &&
-      status === "INATIVO"
-    ) {
-      return {
-        sucesso: false,
-        mensagem:
-          "Você não pode desativar o seu próprio usuário.",
-      };
-    }
+        if (
+          id === usuarioLogadoId &&
+          status === "INATIVO"
+        ) {
+          return {
+            sucesso: false,
+            mensagem:
+              "Você não pode desativar o seu próprio usuário.",
+          };
+        }
 
-    const estaDesativandoAdministradorAtivo =
-      usuario.usu_perfil_acesso === "ADMIN" &&
-      usuario.usu_status === "ATIVO" &&
-      status === "INATIVO";
+        const estaDesativandoAdministradorAtivo =
+          usuario.usu_perfil_acesso ===
+            "ADMIN" &&
+          usuario.usu_status === "ATIVO" &&
+          status === "INATIVO";
 
-    if (estaDesativandoAdministradorAtivo) {
-      const totalAdministradoresAtivos =
-        await contarAdministradoresAtivos();
+        if (
+          estaDesativandoAdministradorAtivo
+        ) {
+          const totalAdministradoresAtivos =
+            await repositorio.contarAdministradoresAtivos();
 
-      if (totalAdministradoresAtivos <= 1) {
+          if (
+            totalAdministradoresAtivos <= 1
+          ) {
+            return {
+              sucesso: false,
+              mensagem:
+                "O sistema deve manter pelo menos um administrador ativo.",
+            };
+          }
+        }
+
+        if (
+          usuario.usu_status === status
+        ) {
+          return {
+            sucesso: true,
+          };
+        }
+
+        await repositorio.atualizarStatusUsuario(
+          id,
+          status,
+        );
+
         return {
-          sucesso: false,
-          mensagem:
-            "O sistema deve manter pelo menos um administrador ativo.",
+          sucesso: true,
         };
-      }
-    }
+      });
 
-    if (usuario.usu_status === status) {
-      return {
-        sucesso: true,
-      };
-    }
-
-    await atualizarStatusUsuario(id, status);
-
-    return {
-      sucesso: true,
-    };
+    return resultado;
   } catch (error) {
     if (erroPrismaTemCodigo(error, "P2025")) {
       return {
@@ -120,7 +136,7 @@ export async function alterarStatusUsuario(
 
     console.error(
       "Erro ao alterar o status do usuário:",
-      error
+      error,
     );
 
     return {
