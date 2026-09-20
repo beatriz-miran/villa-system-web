@@ -7,20 +7,33 @@ import {
   vi,
 } from "vitest";
 
-import { registrarBaixaLote } from "./registrar-baixa-lote";
-
-vi.mock(
-  "@/infrastructure/repositories/mortalidade-descarte-repository",
+const repositorioTransacionalMock = vi.hoisted(
   () => ({
     buscarLoteParaRegistrarBaixa: vi.fn(),
     registrarBaixaLote: vi.fn(),
   }),
 );
 
-import {
-  buscarLoteParaRegistrarBaixa,
-  registrarBaixaLote as registrarBaixaLoteRepository,
-} from "@/infrastructure/repositories/mortalidade-descarte-repository";
+vi.mock(
+  "@/infrastructure/repositories/mortalidade-descarte-repository",
+  () => ({
+    executarRegistroBaixaComBloqueio: vi.fn(
+      async (
+        _loteId: number,
+        operacao: (
+          repositorio: typeof repositorioTransacionalMock,
+        ) => Promise<unknown>,
+      ) =>
+        operacao(
+          repositorioTransacionalMock,
+        ),
+    ),
+  }),
+);
+
+import { executarRegistroBaixaComBloqueio } from "@/infrastructure/repositories/mortalidade-descarte-repository";
+
+import { registrarBaixaLote } from "./registrar-baixa-lote";
 
 const loteAtivo = {
   lta_id: 1,
@@ -57,15 +70,14 @@ beforeEach(() => {
     new Date(Date.UTC(2026, 8, 15, 12)),
   );
 
-  vi.mocked(
-    buscarLoteParaRegistrarBaixa,
-  ).mockResolvedValue(loteAtivo as never);
+  repositorioTransacionalMock
+    .buscarLoteParaRegistrarBaixa
+    .mockResolvedValue(loteAtivo as never);
 
-  vi.mocked(
-    registrarBaixaLoteRepository,
-  ).mockResolvedValue({
-    mor_id: 1,
-  } as never);
+  repositorioTransacionalMock.registrarBaixaLote
+    .mockResolvedValue({
+      mor_id: 1,
+    } as never);
 });
 
 afterEach(() => {
@@ -81,7 +93,14 @@ describe("registrarBaixaLote", () => {
     expect(resultado.sucesso).toBe(true);
 
     expect(
-      registrarBaixaLoteRepository,
+      executarRegistroBaixaComBloqueio,
+    ).toHaveBeenCalledWith(
+      1,
+      expect.any(Function),
+    );
+
+    expect(
+      repositorioTransacionalMock.registrarBaixaLote,
     ).toHaveBeenCalledWith({
       loteId: 1,
       usuarioId: 9,
@@ -101,7 +120,7 @@ describe("registrarBaixaLote", () => {
     expect(resultado.sucesso).toBe(true);
 
     expect(
-      registrarBaixaLoteRepository,
+      repositorioTransacionalMock.registrarBaixaLote,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
         motivo: "Descarte sanitário",
@@ -118,7 +137,11 @@ describe("registrarBaixaLote", () => {
     expect(resultado.sucesso).toBe(false);
 
     expect(
-      registrarBaixaLoteRepository,
+      executarRegistroBaixaComBloqueio,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
@@ -131,7 +154,11 @@ describe("registrarBaixaLote", () => {
     expect(resultado.sucesso).toBe(false);
 
     expect(
-      registrarBaixaLoteRepository,
+      executarRegistroBaixaComBloqueio,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
@@ -144,7 +171,11 @@ describe("registrarBaixaLote", () => {
     expect(resultado.sucesso).toBe(false);
 
     expect(
-      registrarBaixaLoteRepository,
+      executarRegistroBaixaComBloqueio,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
@@ -163,7 +194,11 @@ describe("registrarBaixaLote", () => {
     }
 
     expect(
-      registrarBaixaLoteRepository,
+      executarRegistroBaixaComBloqueio,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
@@ -182,14 +217,14 @@ describe("registrarBaixaLote", () => {
     }
 
     expect(
-      registrarBaixaLoteRepository,
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
   it("rejeita quando o lote não existe", async () => {
-    vi.mocked(
-      buscarLoteParaRegistrarBaixa,
-    ).mockResolvedValue(null);
+    repositorioTransacionalMock
+      .buscarLoteParaRegistrarBaixa
+      .mockResolvedValue(null);
 
     const resultado = await registrarBaixaLote(
       dadosBase,
@@ -204,17 +239,17 @@ describe("registrarBaixaLote", () => {
     }
 
     expect(
-      registrarBaixaLoteRepository,
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
   it("rejeita quando o lote está finalizado", async () => {
-    vi.mocked(
-      buscarLoteParaRegistrarBaixa,
-    ).mockResolvedValue({
-      ...loteAtivo,
-      lta_status: "FINALIZADO",
-    } as never);
+    repositorioTransacionalMock
+      .buscarLoteParaRegistrarBaixa
+      .mockResolvedValue({
+        ...loteAtivo,
+        lta_status: "FINALIZADO",
+      } as never);
 
     const resultado = await registrarBaixaLote(
       dadosBase,
@@ -229,7 +264,7 @@ describe("registrarBaixaLote", () => {
     }
 
     expect(
-      registrarBaixaLoteRepository,
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
@@ -248,7 +283,7 @@ describe("registrarBaixaLote", () => {
     }
 
     expect(
-      registrarBaixaLoteRepository,
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
@@ -261,21 +296,21 @@ describe("registrarBaixaLote", () => {
     expect(resultado.sucesso).toBe(true);
 
     expect(
-      registrarBaixaLoteRepository,
+      repositorioTransacionalMock.registrarBaixaLote,
     ).toHaveBeenCalledTimes(1);
   });
 
   it("rejeita quando o lote não possui aves disponíveis", async () => {
-    vi.mocked(
-      buscarLoteParaRegistrarBaixa,
-    ).mockResolvedValue({
-      ...loteAtivo,
-      mortalidade_descarte: [
-        {
-          mor_quantidade: 100,
-        },
-      ],
-    } as never);
+    repositorioTransacionalMock
+      .buscarLoteParaRegistrarBaixa
+      .mockResolvedValue({
+        ...loteAtivo,
+        mortalidade_descarte: [
+          {
+            mor_quantidade: 100,
+          },
+        ],
+      } as never);
 
     const resultado = await registrarBaixaLote(
       dadosBase,
@@ -290,7 +325,7 @@ describe("registrarBaixaLote", () => {
     }
 
     expect(
-      registrarBaixaLoteRepository,
+      repositorioTransacionalMock.registrarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 });

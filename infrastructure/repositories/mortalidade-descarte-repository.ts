@@ -1,3 +1,5 @@
+import type { Prisma } from "../../generated/prisma/client";
+
 import { prisma } from "../database/prisma";
 
 type RegistrarBaixaLoteDados = {
@@ -15,10 +17,11 @@ type EstornarBaixaLoteDados = {
   motivo: string;
 };
 
-export async function buscarLoteParaRegistrarBaixa(
+async function buscarLoteParaRegistrarBaixaComCliente(
+  cliente: Prisma.TransactionClient,
   loteId: number,
 ) {
-  return prisma.lote_aves.findUnique({
+  return cliente.lote_aves.findUnique({
     where: {
       lta_id: loteId,
     },
@@ -40,10 +43,11 @@ export async function buscarLoteParaRegistrarBaixa(
   });
 }
 
-export async function registrarBaixaLote(
+async function registrarBaixaLoteComCliente(
+  cliente: Prisma.TransactionClient,
   dados: RegistrarBaixaLoteDados,
 ) {
-  return prisma.mortalidade_descarte.create({
+  return cliente.mortalidade_descarte.create({
     data: {
       mor_data: dados.data,
       mor_tipo: dados.tipo,
@@ -56,6 +60,54 @@ export async function registrarBaixaLote(
       mor_id: true,
     },
   });
+}
+
+type OperacoesRegistroBaixaLote = {
+  buscarLoteParaRegistrarBaixa: () => ReturnType<
+    typeof buscarLoteParaRegistrarBaixaComCliente
+  >;
+
+  registrarBaixaLote: (
+    dados: RegistrarBaixaLoteDados,
+  ) => ReturnType<
+    typeof registrarBaixaLoteComCliente
+  >;
+};
+
+export async function executarRegistroBaixaComBloqueio<T>(
+  loteId: number,
+  operacao: (
+    repositorio: OperacoesRegistroBaixaLote,
+  ) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(
+    async (transacao) => {
+      await transacao.$queryRaw`
+        SELECT "lta_id"
+        FROM "lote_aves"
+        WHERE "lta_id" = ${loteId}
+        FOR UPDATE
+      `;
+
+      return operacao({
+        buscarLoteParaRegistrarBaixa: () =>
+          buscarLoteParaRegistrarBaixaComCliente(
+            transacao,
+            loteId,
+          ),
+
+        registrarBaixaLote: (dados) =>
+          registrarBaixaLoteComCliente(
+            transacao,
+            dados,
+          ),
+      });
+    },
+    {
+      maxWait: 5000,
+      timeout: 10000,
+    },
+  );
 }
 
 export async function listarBaixasDoLote(
