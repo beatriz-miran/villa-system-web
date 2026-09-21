@@ -62,6 +62,50 @@ async function registrarBaixaLoteComCliente(
   });
 }
 
+async function buscarBaixaPorIdComCliente(
+  cliente: Prisma.TransactionClient,
+  baixaId: number,
+) {
+  return cliente.mortalidade_descarte.findUnique({
+    where: {
+      mor_id: baixaId,
+    },
+    select: {
+      mor_id: true,
+      lta_id: true,
+      mor_quantidade: true,
+      mor_status_registro: true,
+      lote_aves: {
+        select: {
+          lta_status: true,
+        },
+      },
+    },
+  });
+}
+
+async function estornarBaixaLoteComCliente(
+  cliente: Prisma.TransactionClient,
+  {
+    baixaId,
+    usuarioId,
+    motivo,
+  }: EstornarBaixaLoteDados,
+) {
+  return cliente.mortalidade_descarte.updateMany({
+    where: {
+      mor_id: baixaId,
+      mor_status_registro: "ATIVO",
+    },
+    data: {
+      mor_status_registro: "ESTORNADO",
+      mor_estornado_em: new Date(),
+      mor_estornado_por: usuarioId,
+      mor_motivo_estorno: motivo,
+    },
+  });
+}
+
 type OperacoesRegistroBaixaLote = {
   buscarLoteParaRegistrarBaixa: () => ReturnType<
     typeof buscarLoteParaRegistrarBaixaComCliente
@@ -71,6 +115,21 @@ type OperacoesRegistroBaixaLote = {
     dados: RegistrarBaixaLoteDados,
   ) => ReturnType<
     typeof registrarBaixaLoteComCliente
+  >;
+};
+
+type OperacoesEstornoBaixaLote = {
+  buscarBaixaPorId: () => ReturnType<
+    typeof buscarBaixaPorIdComCliente
+  >;
+
+  estornarBaixaLote: (
+    dados: Omit<
+      EstornarBaixaLoteDados,
+      "baixaId"
+    >,
+  ) => ReturnType<
+    typeof estornarBaixaLoteComCliente
   >;
 };
 
@@ -100,6 +159,47 @@ export async function executarRegistroBaixaComBloqueio<T>(
           registrarBaixaLoteComCliente(
             transacao,
             dados,
+          ),
+      });
+    },
+    {
+      maxWait: 5000,
+      timeout: 10000,
+    },
+  );
+}
+
+export async function executarEstornoBaixaComBloqueio<T>(
+  baixaId: number,
+  operacao: (
+    repositorio: OperacoesEstornoBaixaLote,
+  ) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(
+    async (transacao) => {
+      await transacao.$queryRaw`
+        SELECT lote."lta_id"
+        FROM "lote_aves" AS lote
+        INNER JOIN "mortalidade_descarte" AS baixa
+          ON baixa."lta_id" = lote."lta_id"
+        WHERE baixa."mor_id" = ${baixaId}
+        FOR UPDATE OF lote
+      `;
+
+      return operacao({
+        buscarBaixaPorId: () =>
+          buscarBaixaPorIdComCliente(
+            transacao,
+            baixaId,
+          ),
+
+        estornarBaixaLote: (dados) =>
+          estornarBaixaLoteComCliente(
+            transacao,
+            {
+              baixaId,
+              ...dados,
+            },
           ),
       });
     },
@@ -147,45 +247,5 @@ export async function listarBaixasDoLote(
         created_at: "desc",
       },
     ],
-  });
-}
-
-export async function buscarBaixaPorId(
-  baixaId: number,
-) {
-  return prisma.mortalidade_descarte.findUnique({
-    where: {
-      mor_id: baixaId,
-    },
-    select: {
-      mor_id: true,
-      lta_id: true,
-      mor_quantidade: true,
-      mor_status_registro: true,
-      lote_aves: {
-        select: {
-          lta_status: true,
-        },
-      },
-    },
-  });
-}
-
-export async function estornarBaixaLote({
-  baixaId,
-  usuarioId,
-  motivo,
-}: EstornarBaixaLoteDados) {
-  return prisma.mortalidade_descarte.updateMany({
-    where: {
-      mor_id: baixaId,
-      mor_status_registro: "ATIVO",
-    },
-    data: {
-      mor_status_registro: "ESTORNADO",
-      mor_estornado_em: new Date(),
-      mor_estornado_por: usuarioId,
-      mor_motivo_estorno: motivo,
-    },
   });
 }

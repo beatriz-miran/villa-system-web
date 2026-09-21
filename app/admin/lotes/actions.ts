@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { atualizarLote } from "@/application/lotes/atualizar-lote";
 import { criarLote } from "@/application/lotes/criar-lote";
 import { estornarBaixaLote } from "@/application/lotes/estornar-baixa-lote";
+import { finalizarLote } from "@/application/lotes/finalizar-lote";
 import { registrarBaixaLote } from "@/application/lotes/registrar-baixa-lote";
 import type { TipoBaixaLote } from "@/application/lotes/tipo-baixa-lote";
+import { auth } from "@/auth";
 
 export type CriarLoteActionState = {
   erro?: string;
@@ -24,6 +25,11 @@ export type RegistrarBaixaLoteActionState = {
 };
 
 export type EstornarBaixaLoteActionState = {
+  erro?: string;
+  sucesso?: boolean;
+};
+
+export type FinalizarLoteActionState = {
   erro?: string;
   sucesso?: boolean;
 };
@@ -90,7 +96,9 @@ export async function criarLoteAction(
       formData,
       "dataAlojamento",
     ),
-    registradoPorId: Number(session.user.id),
+    registradoPorId: Number(
+      session.user.id,
+    ),
   });
 
   if (!resultado.sucesso) {
@@ -184,21 +192,27 @@ export async function registrarBaixaLoteAction(
     "loteId",
   );
 
-  const resultado = await registrarBaixaLote({
-    loteId,
-    usuarioId: Number(session.user.id),
-    tipo: String(
-      formData.get("tipo") ?? "",
-    ) as TipoBaixaLote,
-    quantidade: extrairNumero(
-      formData,
-      "quantidade",
-    ),
-    data: extrairData(formData, "data"),
-    motivo: String(
-      formData.get("motivo") ?? "",
-    ),
-  });
+  const resultado =
+    await registrarBaixaLote({
+      loteId,
+      usuarioId: Number(
+        session.user.id,
+      ),
+      tipo: String(
+        formData.get("tipo") ?? "",
+      ) as TipoBaixaLote,
+      quantidade: extrairNumero(
+        formData,
+        "quantidade",
+      ),
+      data: extrairData(
+        formData,
+        "data",
+      ),
+      motivo: String(
+        formData.get("motivo") ?? "",
+      ),
+    });
 
   if (!resultado.sucesso) {
     return {
@@ -207,7 +221,9 @@ export async function registrarBaixaLoteAction(
   }
 
   revalidatePath("/admin/lotes");
-  revalidatePath(`/admin/lotes/${loteId}`);
+  revalidatePath(
+    `/admin/lotes/${loteId}`,
+  );
 
   return {
     sucesso: true,
@@ -233,14 +249,73 @@ export async function estornarBaixaLoteAction(
     };
   }
 
-  const resultado = await estornarBaixaLote({
-    baixaId: extrairNumero(
+  const resultado =
+    await estornarBaixaLote({
+      baixaId: extrairNumero(
+        formData,
+        "baixaId",
+      ),
+      usuarioId: Number(
+        session.user.id,
+      ),
+      motivo: String(
+        formData.get("motivo") ?? "",
+      ),
+    });
+
+  if (!resultado.sucesso) {
+    return {
+      erro: resultado.mensagem,
+    };
+  }
+
+  revalidatePath("/admin/lotes");
+  revalidatePath(
+    `/admin/lotes/${resultado.loteId}`,
+  );
+
+  return {
+    sucesso: true,
+  };
+}
+
+export async function finalizarLoteAction(
+  _prevState: FinalizarLoteActionState,
+  formData: FormData,
+): Promise<FinalizarLoteActionState> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      erro: "Sua sessão expirou. Entre novamente no sistema.",
+    };
+  }
+
+  if (session.user.perfil !== "ADMIN") {
+    return {
+      erro:
+        "Você não possui permissão para finalizar lotes.",
+    };
+  }
+
+  const loteId = extrairNumero(
+    formData,
+    "loteId",
+  );
+
+  const resultado = await finalizarLote({
+    loteId,
+    dataEncerramento: extrairData(
       formData,
-      "baixaId",
+      "dataEncerramento",
     ),
-    usuarioId: Number(session.user.id),
-    motivo: String(
-      formData.get("motivo") ?? "",
+    motivoEncerramento: String(
+      formData.get(
+        "motivoEncerramento",
+      ) ?? "",
+    ),
+    destinoAves: String(
+      formData.get("destinoAves") ?? "",
     ),
   });
 
@@ -252,7 +327,7 @@ export async function estornarBaixaLoteAction(
 
   revalidatePath("/admin/lotes");
   revalidatePath(
-    `/admin/lotes/${resultado.loteId}`,
+    `/admin/lotes/${loteId}`,
   );
 
   return {

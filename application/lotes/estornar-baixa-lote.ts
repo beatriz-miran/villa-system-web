@@ -1,10 +1,7 @@
 import { z } from "zod";
 
 import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
-import {
-  buscarBaixaPorId,
-  estornarBaixaLote as estornarBaixaLoteRepository,
-} from "@/infrastructure/repositories/mortalidade-descarte-repository";
+import { executarEstornoBaixaComBloqueio } from "@/infrastructure/repositories/mortalidade-descarte-repository";
 
 const estornarBaixaLoteSchema = z.object({
   baixaId: z
@@ -72,46 +69,68 @@ export async function estornarBaixaLote(
   } = validacao.data;
 
   try {
-    const baixa = await buscarBaixaPorId(baixaId);
+    return await executarEstornoBaixaComBloqueio<
+      EstornarBaixaLoteResultado
+    >(
+      baixaId,
+      async ({
+        buscarBaixaPorId,
+        estornarBaixaLote:
+          estornarBaixaLoteRepository,
+      }) => {
+        const baixa =
+          await buscarBaixaPorId();
 
-    if (!baixa) {
-      return {
-        sucesso: false,
-        mensagem:
-          "O registro de baixa não foi encontrado.",
-      };
-    }
+        if (!baixa) {
+          return {
+            sucesso: false,
+            mensagem:
+              "O registro de baixa não foi encontrado.",
+          };
+        }
 
-    if (
-      baixa.mor_status_registro ===
-      "ESTORNADO"
-    ) {
-      return {
-        sucesso: false,
-        mensagem:
-          "Este registro já foi estornado.",
-      };
-    }
+        if (
+          baixa.mor_status_registro ===
+          "ESTORNADO"
+        ) {
+          return {
+            sucesso: false,
+            mensagem:
+              "Este registro já foi estornado.",
+          };
+        }
 
-    const resultado =
-      await estornarBaixaLoteRepository({
-        baixaId,
-        usuarioId,
-        motivo,
-      });
+        if (
+          baixa.lote_aves.lta_status !==
+          "ATIVO"
+        ) {
+          return {
+            sucesso: false,
+            mensagem:
+              "Não é possível estornar baixas de um lote finalizado.",
+          };
+        }
 
-    if (resultado.count === 0) {
-      return {
-        sucesso: false,
-        mensagem:
-          "Este registro já foi estornado por outro usuário.",
-      };
-    }
+        const resultado =
+          await estornarBaixaLoteRepository({
+            usuarioId,
+            motivo,
+          });
 
-    return {
-      sucesso: true,
-      loteId: baixa.lta_id,
-    };
+        if (resultado.count === 0) {
+          return {
+            sucesso: false,
+            mensagem:
+              "Este registro já foi estornado por outro usuário.",
+          };
+        }
+
+        return {
+          sucesso: true,
+          loteId: baixa.lta_id,
+        };
+      },
+    );
   } catch (error) {
     if (
       erroPrismaTemCodigo(error, "P2003") ||
