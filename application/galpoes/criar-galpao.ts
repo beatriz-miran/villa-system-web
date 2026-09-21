@@ -1,24 +1,14 @@
-import { z } from "zod";
-
+import {
+  galpaoSchema,
+  type GalpaoDados,
+} from "@/application/galpoes/galpao-schema";
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   buscarGalpaoPorNome,
   criarGalpao as criarGalpaoRepository,
 } from "@/infrastructure/repositories/galpao-repository";
 
-const criarGalpaoSchema = z.object({
-  nome: z
-    .string()
-    .trim()
-    .min(2, "Informe o nome do galpão.")
-    .max(100, "O nome do galpão deve possuir no máximo 100 caracteres."),
-
-  areaM2: z
-    .number({ error: "Informe a área do galpão em m²." })
-    .positive("A área do galpão deve ser maior que zero.")
-    .max(9999.99, "A área do galpão deve ser de no máximo 9999,99 m²."),
-});
-
-export type CriarGalpaoInput = z.infer<typeof criarGalpaoSchema>;
+export type CriarGalpaoInput = GalpaoDados;
 
 export type CriarGalpaoResultado =
   | {
@@ -32,7 +22,7 @@ export type CriarGalpaoResultado =
 export async function criarGalpao(
   dados: CriarGalpaoInput
 ): Promise<CriarGalpaoResultado> {
-  const validacao = criarGalpaoSchema.safeParse(dados);
+  const validacao = galpaoSchema.safeParse(dados);
 
   if (!validacao.success) {
     return {
@@ -45,21 +35,38 @@ export async function criarGalpao(
 
   const { nome, areaM2 } = validacao.data;
 
-  const galpaoComMesmoNome = await buscarGalpaoPorNome(nome);
+  try {
+    const galpaoComMesmoNome = await buscarGalpaoPorNome(nome);
 
-  if (galpaoComMesmoNome) {
+    if (galpaoComMesmoNome) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe um galpão cadastrado com este nome.",
+      };
+    }
+
+    await criarGalpaoRepository({
+      nome,
+      areaM2,
+    });
+
+    return {
+      sucesso: true,
+    };
+  } catch (erro) {
+    if (erroPrismaTemCodigo(erro, "P2002")) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe um galpão cadastrado com este nome.",
+      };
+    }
+
+    console.error("Falha ao cadastrar o galpão:", erro);
+
     return {
       sucesso: false,
-      mensagem: "Já existe um galpão cadastrado com este nome.",
+      mensagem:
+        "Não foi possível cadastrar o galpão no momento. Tente novamente.",
     };
   }
-
-  await criarGalpaoRepository({
-    nome,
-    areaM2,
-  });
-
-  return {
-    sucesso: true,
-  };
 }

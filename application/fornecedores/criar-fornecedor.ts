@@ -1,84 +1,19 @@
-import { z } from "zod";
-
+import { formatarCepParcial } from "@/application/enderecos/cep";
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   buscarFornecedorPorCnpj,
   buscarFornecedorPorEmail,
   criarFornecedor as criarFornecedorRepository,
 } from "@/infrastructure/repositories/fornecedor-repository";
 
-import { cnpjValido, formatarCnpj } from "./cnpj";
+import { formatarCnpj } from "./cnpj";
+import {
+  fornecedorSchema,
+  type FornecedorInput,
+} from "./fornecedor-schema";
+import { formatarTelefoneParcial } from "./telefone";
 
-const criarFornecedorSchema = z.object({
-  razaoSocial: z
-    .string()
-    .trim()
-    .min(2, "Informe a razão social do fornecedor."),
-
-  nomeFantasia: z
-    .string()
-    .trim()
-    .max(200, "O nome fantasia deve possuir no máximo 200 caracteres.")
-    .optional(),
-
-  cnpj: z
-    .string()
-    .trim()
-    .min(1, "Informe o CNPJ do fornecedor.")
-    .refine(cnpjValido, "Informe um CNPJ válido."),
-
-  email: z
-    .string()
-    .trim()
-    .email("Informe um e-mail válido."),
-
-  telefonePrincipal: z
-    .string()
-    .trim()
-    .min(8, "Informe um telefone principal válido."),
-
-  telefoneSecundario: z
-    .string()
-    .trim()
-    .optional(),
-
-  cep: z
-    .string()
-    .trim()
-    .optional(),
-
-  logradouro: z
-    .string()
-    .trim()
-    .optional(),
-
-  numero: z
-    .string()
-    .trim()
-    .optional(),
-
-  bairro: z
-    .string()
-    .trim()
-    .optional(),
-
-  cidade: z
-    .string()
-    .trim()
-    .optional(),
-
-  estado: z
-    .string()
-    .trim()
-    .length(2, "Informe a UF com 2 letras.")
-    .optional(),
-
-  categoriaId: z
-    .number({ error: "Selecione uma categoria de fornecimento válida." })
-    .int()
-    .positive("Selecione uma categoria de fornecimento válida."),
-});
-
-export type CriarFornecedorInput = z.infer<typeof criarFornecedorSchema>;
+export type CriarFornecedorInput = FornecedorInput;
 
 export type CriarFornecedorResultado =
   | {
@@ -90,9 +25,9 @@ export type CriarFornecedorResultado =
     };
 
 export async function criarFornecedor(
-  dados: CriarFornecedorInput
+  dados: CriarFornecedorInput,
 ): Promise<CriarFornecedorResultado> {
-  const validacao = criarFornecedorSchema.safeParse(dados);
+  const validacao = fornecedorSchema.safeParse(dados);
 
   if (!validacao.success) {
     return {
@@ -116,51 +51,84 @@ export async function criarFornecedor(
     bairro,
     cidade,
     estado,
-    categoriaId,
+    categoriaIds,
   } = validacao.data;
 
   const cnpjFormatado = formatarCnpj(cnpj);
   const emailNormalizado = email.toLowerCase();
+  const telefonePrincipalFormatado =
+    formatarTelefoneParcial(telefonePrincipal);
+  const telefoneSecundarioFormatado = telefoneSecundario
+    ? formatarTelefoneParcial(telefoneSecundario)
+    : null;
+  const cepFormatado = cep ? formatarCepParcial(cep) : null;
 
-  const fornecedorComMesmoCnpj = await buscarFornecedorPorCnpj(
-    cnpjFormatado
-  );
+  try {
+    const [fornecedorComMesmoCnpj, fornecedorComMesmoEmail] =
+      await Promise.all([
+        buscarFornecedorPorCnpj(cnpjFormatado),
+        buscarFornecedorPorEmail(emailNormalizado),
+      ]);
 
-  if (fornecedorComMesmoCnpj) {
+    if (fornecedorComMesmoCnpj) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe um fornecedor cadastrado com este CNPJ.",
+      };
+    }
+
+    if (fornecedorComMesmoEmail) {
+      return {
+        sucesso: false,
+        mensagem: "Já existe um fornecedor cadastrado com este e-mail.",
+      };
+    }
+
+    await criarFornecedorRepository({
+      razaoSocial,
+      nomeFantasia: nomeFantasia || null,
+      cnpj: cnpjFormatado,
+      email: emailNormalizado,
+      telefonePrincipal: telefonePrincipalFormatado,
+      telefoneSecundario: telefoneSecundarioFormatado,
+      cep: cepFormatado,
+      logradouro: logradouro || null,
+      numero: numero || null,
+      bairro: bairro || null,
+      cidade: cidade || null,
+      estado: estado ? estado.toUpperCase() : null,
+      categoriaIds,
+    });
+
+    return {
+      sucesso: true,
+    };
+  } catch (erro) {
+    if (erroPrismaTemCodigo(erro, "P2002")) {
+      return {
+        sucesso: false,
+        mensagem:
+          "Já existe um fornecedor cadastrado com este CNPJ ou e-mail.",
+      };
+    }
+
+    if (
+      erroPrismaTemCodigo(erro, "P2003") ||
+      erroPrismaTemCodigo(erro, "P2025")
+    ) {
+      return {
+        sucesso: false,
+        mensagem:
+          "Uma das categorias de fornecimento selecionadas não existe mais.",
+      };
+    }
+
+    console.error("Erro ao cadastrar fornecedor:", erro);
+
     return {
       sucesso: false,
-      mensagem: "Já existe um fornecedor cadastrado com este CNPJ.",
+      mensagem:
+        "Não foi possível cadastrar o fornecedor. Tente novamente.",
     };
   }
-
-  const fornecedorComMesmoEmail = await buscarFornecedorPorEmail(
-    emailNormalizado
-  );
-
-  if (fornecedorComMesmoEmail) {
-    return {
-      sucesso: false,
-      mensagem: "Já existe um fornecedor cadastrado com este e-mail.",
-    };
-  }
-
-  await criarFornecedorRepository({
-    razaoSocial,
-    nomeFantasia: nomeFantasia || null,
-    cnpj: cnpjFormatado,
-    email: emailNormalizado,
-    telefonePrincipal,
-    telefoneSecundario: telefoneSecundario || null,
-    cep: cep || null,
-    logradouro: logradouro || null,
-    numero: numero || null,
-    bairro: bairro || null,
-    cidade: cidade || null,
-    estado: estado ? estado.toUpperCase() : null,
-    categoriaId,
-  });
-
-  return {
-    sucesso: true,
-  };
 }

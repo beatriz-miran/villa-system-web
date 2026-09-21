@@ -14,7 +14,8 @@ jobs:
     timeout-minutes: 15
 
     env:
-      DATABASE_URL: mysql://usuario:senha@127.0.0.1:3306/villa_system
+      DATABASE_URL: postgresql://usuario:senha@127.0.0.1:5432/villa_system
+      DIRECT_URL: postgresql://usuario:senha@127.0.0.1:5432/villa_system
       AUTH_SECRET: chave-temporaria-usada-apenas-no-build
 
     steps:
