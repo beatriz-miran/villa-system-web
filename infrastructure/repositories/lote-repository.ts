@@ -22,6 +22,12 @@ type AtualizarLoteDados = {
   dataAlojamento: Date;
 };
 
+type FinalizarLoteDados = {
+  dataEncerramento: Date;
+  motivoEncerramento: string;
+  destinoAves: string;
+};
+
 const selectLoteResumo = {
   lta_id: true,
   lta_codigo_qr_code: true,
@@ -55,6 +61,8 @@ const selectLoteDetalhado = {
   lta_fase: true,
   lta_status: true,
   lta_data_encerramento: true,
+  lta_motivo_encerramento: true,
+  lta_destino_descarte: true,
   created_at: true,
   linhagem: {
     select: {
@@ -121,6 +129,20 @@ const selectLoteAtualizacao = {
   },
 } as const;
 
+const selectLoteFinalizacao = {
+  lta_id: true,
+  lta_status: true,
+  lta_data_alojamento: true,
+  mortalidade_descarte: {
+    where: {
+      mor_status_registro: "ATIVO",
+    },
+    select: {
+      mor_data: true,
+    },
+  },
+} as const;
+
 async function buscarLoteParaAtualizacaoComCliente(
   cliente: Prisma.TransactionClient,
   id: number,
@@ -170,6 +192,47 @@ async function atualizarLoteComCliente(
   });
 }
 
+async function buscarLoteParaFinalizacaoComCliente(
+  cliente: Prisma.TransactionClient,
+  id: number,
+) {
+  return cliente.lote_aves.findUnique({
+    where: {
+      lta_id: id,
+    },
+    select: selectLoteFinalizacao,
+  });
+}
+
+async function finalizarLoteComCliente(
+  cliente: Prisma.TransactionClient,
+  id: number,
+  dados: FinalizarLoteDados,
+) {
+  return cliente.lote_aves.update({
+    where: {
+      lta_id: id,
+    },
+    data: {
+      lta_status: "FINALIZADO",
+      lta_data_encerramento:
+        dados.dataEncerramento,
+      lta_motivo_encerramento:
+        dados.motivoEncerramento,
+      lta_destino_descarte:
+        dados.destinoAves,
+      updated_at: new Date(),
+    },
+    select: {
+      lta_id: true,
+      lta_status: true,
+      lta_data_encerramento: true,
+      lta_motivo_encerramento: true,
+      lta_destino_descarte: true,
+    },
+  });
+}
+
 type OperacoesAtualizacaoLote = {
   buscarLoteParaAtualizacao: () => ReturnType<
     typeof buscarLoteParaAtualizacaoComCliente
@@ -179,6 +242,18 @@ type OperacoesAtualizacaoLote = {
     dados: AtualizarLoteDados,
   ) => ReturnType<
     typeof atualizarLoteComCliente
+  >;
+};
+
+type OperacoesFinalizacaoLote = {
+  buscarLoteParaFinalizacao: () => ReturnType<
+    typeof buscarLoteParaFinalizacaoComCliente
+  >;
+
+  finalizarLote: (
+    dados: FinalizarLoteDados,
+  ) => ReturnType<
+    typeof finalizarLoteComCliente
   >;
 };
 
@@ -206,6 +281,43 @@ export async function executarAtualizacaoLoteComBloqueio<T>(
 
         atualizarLote: (dados) =>
           atualizarLoteComCliente(
+            transacao,
+            id,
+            dados,
+          ),
+      });
+    },
+    {
+      maxWait: 5000,
+      timeout: 10000,
+    },
+  );
+}
+
+export async function executarFinalizacaoLoteComBloqueio<T>(
+  id: number,
+  operacao: (
+    repositorio: OperacoesFinalizacaoLote,
+  ) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(
+    async (transacao) => {
+      await transacao.$queryRaw`
+        SELECT "lta_id"
+        FROM "lote_aves"
+        WHERE "lta_id" = ${id}
+        FOR UPDATE
+      `;
+
+      return operacao({
+        buscarLoteParaFinalizacao: () =>
+          buscarLoteParaFinalizacaoComCliente(
+            transacao,
+            id,
+          ),
+
+        finalizarLote: (dados) =>
+          finalizarLoteComCliente(
             transacao,
             id,
             dados,

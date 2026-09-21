@@ -6,20 +6,34 @@ import {
   vi,
 } from "vitest";
 
-import { estornarBaixaLote } from "./estornar-baixa-lote";
-
-vi.mock(
-  "@/infrastructure/repositories/mortalidade-descarte-repository",
+const repositorioTransacionalMock = vi.hoisted(
   () => ({
     buscarBaixaPorId: vi.fn(),
     estornarBaixaLote: vi.fn(),
   }),
 );
 
-import {
-  buscarBaixaPorId,
-  estornarBaixaLote as estornarBaixaLoteRepository,
-} from "@/infrastructure/repositories/mortalidade-descarte-repository";
+vi.mock(
+  "@/infrastructure/repositories/mortalidade-descarte-repository",
+  () => ({
+    executarEstornoBaixaComBloqueio:
+      vi.fn(
+        async (
+          _baixaId: number,
+          operacao: (
+            repositorio: typeof repositorioTransacionalMock,
+          ) => Promise<unknown>,
+        ) =>
+          operacao(
+            repositorioTransacionalMock,
+          ),
+      ),
+  }),
+);
+
+import { executarEstornoBaixaComBloqueio } from "@/infrastructure/repositories/mortalidade-descarte-repository";
+
+import { estornarBaixaLote } from "./estornar-baixa-lote";
 
 const baixaAtiva = {
   mor_id: 10,
@@ -34,28 +48,30 @@ const baixaAtiva = {
 const dadosBase = {
   baixaId: 10,
   usuarioId: 9,
-  motivo: "Lançamento realizado incorretamente.",
+  motivo:
+    "Lançamento realizado incorretamente.",
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
 
-  vi.mocked(
-    buscarBaixaPorId,
-  ).mockResolvedValue(baixaAtiva as never);
+  repositorioTransacionalMock
+    .buscarBaixaPorId
+    .mockResolvedValue(
+      baixaAtiva as never,
+    );
 
-  vi.mocked(
-    estornarBaixaLoteRepository,
-  ).mockResolvedValue({
-    count: 1,
-  });
+  repositorioTransacionalMock
+    .estornarBaixaLote
+    .mockResolvedValue({
+      count: 1,
+    });
 });
 
 describe("estornarBaixaLote", () => {
-  it("estorna uma baixa válida", async () => {
-    const resultado = await estornarBaixaLote(
-      dadosBase,
-    );
+  it("estorna uma baixa válida dentro do bloqueio do lote", async () => {
+    const resultado =
+      await estornarBaixaLote(dadosBase);
 
     expect(resultado).toEqual({
       sucesso: true,
@@ -63,9 +79,16 @@ describe("estornarBaixaLote", () => {
     });
 
     expect(
-      estornarBaixaLoteRepository,
+      executarEstornoBaixaComBloqueio,
+    ).toHaveBeenCalledWith(
+      10,
+      expect.any(Function),
+    );
+
+    expect(
+      repositorioTransacionalMock
+        .estornarBaixaLote,
     ).toHaveBeenCalledWith({
-      baixaId: 10,
       usuarioId: 9,
       motivo:
         "Lançamento realizado incorretamente.",
@@ -73,15 +96,18 @@ describe("estornarBaixaLote", () => {
   });
 
   it("remove espaços extras do motivo", async () => {
-    const resultado = await estornarBaixaLote({
-      ...dadosBase,
-      motivo: "  Quantidade informada incorretamente.  ",
-    });
+    const resultado =
+      await estornarBaixaLote({
+        ...dadosBase,
+        motivo:
+          "  Quantidade informada incorretamente.  ",
+      });
 
     expect(resultado.sucesso).toBe(true);
 
     expect(
-      estornarBaixaLoteRepository,
+      repositorioTransacionalMock
+        .estornarBaixaLote,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
         motivo:
@@ -90,44 +116,46 @@ describe("estornarBaixaLote", () => {
     );
   });
 
-  it("rejeita um identificador de baixa inválido", async () => {
-    const resultado = await estornarBaixaLote({
-      ...dadosBase,
-      baixaId: 0,
-    });
+  it("rejeita um identificador de baixa inválido antes da transação", async () => {
+    const resultado =
+      await estornarBaixaLote({
+        ...dadosBase,
+        baixaId: 0,
+      });
 
     expect(resultado.sucesso).toBe(false);
 
     expect(
-      buscarBaixaPorId,
+      executarEstornoBaixaComBloqueio,
     ).not.toHaveBeenCalled();
 
     expect(
-      estornarBaixaLoteRepository,
+      repositorioTransacionalMock
+        .estornarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
   it("rejeita um motivo muito curto", async () => {
-    const resultado = await estornarBaixaLote({
-      ...dadosBase,
-      motivo: "Erro",
-    });
+    const resultado =
+      await estornarBaixaLote({
+        ...dadosBase,
+        motivo: "Erro",
+      });
 
     expect(resultado.sucesso).toBe(false);
 
     expect(
-      estornarBaixaLoteRepository,
+      executarEstornoBaixaComBloqueio,
     ).not.toHaveBeenCalled();
   });
 
   it("rejeita quando o registro não existe", async () => {
-    vi.mocked(
-      buscarBaixaPorId,
-    ).mockResolvedValue(null);
+    repositorioTransacionalMock
+      .buscarBaixaPorId
+      .mockResolvedValue(null);
 
-    const resultado = await estornarBaixaLote(
-      dadosBase,
-    );
+    const resultado =
+      await estornarBaixaLote(dadosBase);
 
     expect(resultado.sucesso).toBe(false);
 
@@ -138,21 +166,21 @@ describe("estornarBaixaLote", () => {
     }
 
     expect(
-      estornarBaixaLoteRepository,
+      repositorioTransacionalMock
+        .estornarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
   it("rejeita quando o registro já foi estornado", async () => {
-    vi.mocked(
-      buscarBaixaPorId,
-    ).mockResolvedValue({
-      ...baixaAtiva,
-      mor_status_registro: "ESTORNADO",
-    } as never);
+    repositorioTransacionalMock
+      .buscarBaixaPorId
+      .mockResolvedValue({
+        ...baixaAtiva,
+        mor_status_registro: "ESTORNADO",
+      } as never);
 
-    const resultado = await estornarBaixaLote(
-      dadosBase,
-    );
+    const resultado =
+      await estornarBaixaLote(dadosBase);
 
     expect(resultado.sucesso).toBe(false);
 
@@ -163,20 +191,47 @@ describe("estornarBaixaLote", () => {
     }
 
     expect(
-      estornarBaixaLoteRepository,
+      repositorioTransacionalMock
+        .estornarBaixaLote,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejeita estorno de baixa pertencente a lote finalizado", async () => {
+    repositorioTransacionalMock
+      .buscarBaixaPorId
+      .mockResolvedValue({
+        ...baixaAtiva,
+        lote_aves: {
+          lta_status: "FINALIZADO",
+        },
+      } as never);
+
+    const resultado =
+      await estornarBaixaLote(dadosBase);
+
+    expect(resultado.sucesso).toBe(false);
+
+    if (!resultado.sucesso) {
+      expect(resultado.mensagem).toBe(
+        "Não é possível estornar baixas de um lote finalizado.",
+      );
+    }
+
+    expect(
+      repositorioTransacionalMock
+        .estornarBaixaLote,
     ).not.toHaveBeenCalled();
   });
 
   it("trata estorno concorrente realizado por outro usuário", async () => {
-    vi.mocked(
-      estornarBaixaLoteRepository,
-    ).mockResolvedValue({
-      count: 0,
-    });
+    repositorioTransacionalMock
+      .estornarBaixaLote
+      .mockResolvedValue({
+        count: 0,
+      });
 
-    const resultado = await estornarBaixaLote(
-      dadosBase,
-    );
+    const resultado =
+      await estornarBaixaLote(dadosBase);
 
     expect(resultado.sucesso).toBe(false);
 

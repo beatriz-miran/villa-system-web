@@ -20,8 +20,9 @@ import {
   tipoBaixaLoteLabel,
   type TipoBaixaLote,
 } from "@/application/lotes/tipo-baixa-lote";
-import RegistrarBaixaLoteForm from "@/app/admin/lotes/components/RegistrarBaixaLoteForm";
 import EstornarBaixaLoteForm from "@/app/admin/lotes/components/EstornarBaixaLoteForm";
+import FinalizarLoteForm from "@/app/admin/lotes/components/FinalizarLoteForm";
+import RegistrarBaixaLoteForm from "@/app/admin/lotes/components/RegistrarBaixaLoteForm";
 
 type LotePageProps = {
   params: Promise<{
@@ -284,6 +285,29 @@ export default async function LotePage({
       "America/Sao_Paulo",
     );
 
+  const ultimaDataBaixaValida =
+    baixas.reduce(
+      (dataMaisRecente, baixa) => {
+        if (
+          baixa.mor_status_registro ===
+            "ATIVO" &&
+          baixa.mor_data.getTime() >
+            dataMaisRecente.getTime()
+        ) {
+          return baixa.mor_data;
+        }
+
+        return dataMaisRecente;
+      },
+      lote.lta_data_alojamento,
+    );
+
+  const dataMinimaEncerramento =
+    formatarDataParaInput(
+      ultimaDataBaixaValida,
+      "UTC",
+    );
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="w-full">
@@ -310,12 +334,14 @@ export default async function LotePage({
               Voltar
             </Link>
 
-            <Link
-              href={`/admin/lotes/${lote.lta_id}/editar`}
-              className="rounded-md bg-[#1B3B32] px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[#142d26]"
-            >
-              Editar lote
-            </Link>
+            {lote.lta_status === "ATIVO" ? (
+              <Link
+                href={`/admin/lotes/${lote.lta_id}/editar`}
+                className="rounded-md bg-[#1B3B32] px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[#142d26]"
+              >
+                Editar lote
+              </Link>
+            ) : null}
           </div>
         </header>
 
@@ -343,14 +369,33 @@ export default async function LotePage({
               </span>
 
               {lote.lta_status === "ATIVO" ? (
-                <RegistrarBaixaLoteForm
-                  loteId={lote.lta_id}
-                  quantidadeDisponivel={
-                    quantidadeAtual
-                  }
-                  dataMinima={dataMinimaBaixa}
-                  dataMaxima={dataMaximaBaixa}
-                />
+                <>
+                  <RegistrarBaixaLoteForm
+                    loteId={lote.lta_id}
+                    quantidadeDisponivel={
+                      quantidadeAtual
+                    }
+                    dataMinima={
+                      dataMinimaBaixa
+                    }
+                    dataMaxima={
+                      dataMaximaBaixa
+                    }
+                  />
+
+                  <FinalizarLoteForm
+                    loteId={lote.lta_id}
+                    quantidadeAtual={
+                      quantidadeAtual
+                    }
+                    dataMinima={
+                      dataMinimaEncerramento
+                    }
+                    dataMaxima={
+                      dataMaximaBaixa
+                    }
+                  />
+                </>
               ) : null}
             </div>
           </div>
@@ -788,7 +833,9 @@ export default async function LotePage({
                     </dl>
 
                     {baixa.mor_status_registro ===
-                    "ATIVO" ? (
+                      "ATIVO" &&
+                    lote.lta_status ===
+                      "ATIVO" ? (
                       <div className="mt-4 flex justify-end border-t border-gray-100 pt-4">
                         <EstornarBaixaLoteForm
                           baixaId={baixa.mor_id}
@@ -837,6 +884,24 @@ export default async function LotePage({
                 valor={formatarDataCalendario(
                   lote.lta_data_encerramento,
                 )}
+              />
+            ) : null}
+
+            {lote.lta_motivo_encerramento ? (
+              <CampoInformacao
+                rotulo="Motivo do encerramento"
+                valor={
+                  lote.lta_motivo_encerramento
+                }
+              />
+            ) : null}
+
+            {lote.lta_destino_descarte ? (
+              <CampoInformacao
+                rotulo="Destino das aves"
+                valor={
+                  lote.lta_destino_descarte
+                }
               />
             ) : null}
           </div>
