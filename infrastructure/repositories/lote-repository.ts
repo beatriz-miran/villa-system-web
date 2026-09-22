@@ -340,6 +340,40 @@ export async function listarLotes() {
   });
 }
 
+export async function listarLotesAtivosComSaldo() {
+  return prisma.lote_aves.findMany({
+    where: {
+      lta_status: "ATIVO",
+    },
+    select: {
+      lta_id: true,
+      lta_codigo_qr_code: true,
+      lta_quant_inicial: true,
+      galpao: {
+        select: {
+          gal_nome: true,
+        },
+      },
+      linhagem: {
+        select: {
+          lin_nome: true,
+        },
+      },
+      mortalidade_descarte: {
+        where: {
+          mor_status_registro: "ATIVO",
+        },
+        select: {
+          mor_quantidade: true,
+        },
+      },
+    },
+    orderBy: {
+      lta_data_alojamento: "desc",
+    },
+  });
+}
+
 export async function buscarLotePorId(
   id: number,
 ) {

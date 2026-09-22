@@ -20,9 +20,12 @@ import {
   tipoBaixaLoteLabel,
   type TipoBaixaLote,
 } from "@/application/lotes/tipo-baixa-lote";
+import { listarProducaoLote } from "@/application/producao-ovos/listar-producao-lote";
 import EstornarBaixaLoteForm from "@/app/admin/lotes/components/EstornarBaixaLoteForm";
+import EstornarProducaoLoteForm from "@/app/admin/lotes/components/EstornarProducaoLoteForm";
 import FinalizarLoteForm from "@/app/admin/lotes/components/FinalizarLoteForm";
 import RegistrarBaixaLoteForm from "@/app/admin/lotes/components/RegistrarBaixaLoteForm";
+import RegistrarProducaoLoteForm from "@/app/admin/lotes/components/RegistrarProducaoLoteForm";
 
 type LotePageProps = {
   params: Promise<{
@@ -94,6 +97,10 @@ function formatarAves(quantidade: number) {
   return `${quantidade.toLocaleString("pt-BR")} ${
     quantidade === 1 ? "ave" : "aves"
   }`;
+}
+
+function formatarOvos(quantidade: number) {
+  return `${quantidade.toLocaleString("pt-BR")} ovos`;
 }
 
 function formatarDecimal(valor: number) {
@@ -181,6 +188,35 @@ function StatusBaixaBadge({
   );
 }
 
+const tipoMovimentoOvoLabel: Record<
+  "COLETA" | "VENDA" | "PERDA" | "DESCARTE",
+  string
+> = {
+  COLETA: "Comercial",
+  VENDA: "Venda",
+  PERDA: "Perda",
+  DESCARTE: "Descarte",
+};
+
+function TipoMovimentoOvoBadge({
+  tipo,
+}: {
+  tipo: "COLETA" | "VENDA" | "PERDA" | "DESCARTE";
+}) {
+  const cores =
+    tipo === "PERDA"
+      ? "bg-amber-50 text-amber-700"
+      : "bg-emerald-50 text-emerald-700";
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${cores}`}
+    >
+      {tipoMovimentoOvoLabel[tipo]}
+    </span>
+  );
+}
+
 export default async function LotePage({
   params,
 }: LotePageProps) {
@@ -194,9 +230,10 @@ export default async function LotePage({
     notFound();
   }
 
-  const [lote, baixas] = await Promise.all([
+  const [lote, baixas, producao] = await Promise.all([
     buscarLoteDetalhado(loteId),
     listarBaixasLote(loteId),
+    listarProducaoLote(loteId),
   ]);
 
   if (!lote) {
@@ -370,6 +407,19 @@ export default async function LotePage({
 
               {lote.lta_status === "ATIVO" ? (
                 <>
+                  <RegistrarProducaoLoteForm
+                    loteId={lote.lta_id}
+                    quantidadeDisponivel={
+                      quantidadeAtual
+                    }
+                    dataMinima={
+                      dataMinimaBaixa
+                    }
+                    dataMaxima={
+                      dataMaximaBaixa
+                    }
+                  />
+
                   <RegistrarBaixaLoteForm
                     loteId={lote.lta_id}
                     quantidadeDisponivel={
@@ -849,6 +899,321 @@ export default async function LotePage({
                           }
                           data={formatarDataCalendario(
                             baixa.mor_data,
+                          )}
+                        />
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="mt-5 rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="border-b border-gray-200 px-5 py-5 sm:px-6">
+            <h2 className="text-lg font-bold text-gray-900">
+              Histórico de produção de ovos
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Coletas registradas para este lote.
+            </p>
+          </div>
+
+          {producao.length === 0 ? (
+            <div className="px-5 py-10 text-center sm:px-6">
+              <p className="text-sm font-medium text-gray-700">
+                Nenhuma produção registrada.
+              </p>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Os registros de coleta de ovos aparecerão aqui.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="hidden overflow-x-auto lg:block">
+                <table className="w-full table-fixed border-collapse">
+                  <thead className="bg-gray-50">
+                    <tr className="border-b border-gray-200">
+                      <th className="w-[10%] px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Data
+                      </th>
+
+                      <th className="w-[12%] px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Tipo
+                      </th>
+
+                      <th className="w-[10%] px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Quantidade
+                      </th>
+
+                      <th className="w-[23%] px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Registrado por
+                      </th>
+
+                      <th className="w-[15%] px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Situação
+                      </th>
+
+                      <th className="w-[10%] px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {producao.map((movimento) => (
+                      <tr
+                        key={movimento.mvo_id}
+                        className={`border-b border-gray-100 last:border-b-0 ${
+                          movimento.mvo_status_registro ===
+                          "ESTORNADO"
+                            ? "bg-gray-50/70"
+                            : "bg-white"
+                        }`}
+                      >
+                        <td className="px-5 py-4 align-top text-sm text-gray-700">
+                          {formatarDataCalendario(
+                            movimento.mvo_data_movimento,
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 align-top">
+                          <TipoMovimentoOvoBadge
+                            tipo={
+                              movimento.mvo_tipo_movimento
+                            }
+                          />
+                        </td>
+
+                        <td className="px-5 py-4 align-top text-sm font-medium text-gray-900">
+                          {formatarOvos(
+                            movimento.mvo_quantidade,
+                          )}
+                        </td>
+
+                        <td className="break-words px-5 py-4 align-top">
+                          <p className="text-sm text-gray-700">
+                            {
+                              movimento
+                                .usuario_movimento_ovo_usu_idTousuario
+                                .usu_nome
+                            }
+                          </p>
+
+                          <p className="mt-1 text-xs text-gray-500">
+                            {formatarDataHora(
+                              movimento.created_at,
+                            )}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4 align-top">
+                          <StatusBaixaBadge
+                            status={
+                              movimento.mvo_status_registro
+                            }
+                          />
+
+                          {movimento.mvo_status_registro ===
+                            "ESTORNADO" ? (
+                            <div className="mt-2 space-y-1 text-xs text-gray-500">
+                              {movimento
+                                .usuario_movimento_ovo_mvo_estornado_porTousuario ? (
+                                <p>
+                                  Por{" "}
+                                  {
+                                    movimento
+                                      .usuario_movimento_ovo_mvo_estornado_porTousuario
+                                      .usu_nome
+                                  }
+                                </p>
+                              ) : null}
+
+                              {movimento.mvo_estornado_em ? (
+                                <p>
+                                  {formatarDataHora(
+                                    movimento.mvo_estornado_em,
+                                  )}
+                                </p>
+                              ) : null}
+
+                              {movimento.mvo_motivo_estorno ? (
+                                <p className="break-words">
+                                  {
+                                    movimento.mvo_motivo_estorno
+                                  }
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </td>
+
+                        <td className="px-5 py-4 text-center align-top">
+                          {movimento.mvo_status_registro ===
+                          "ATIVO" ? (
+                            <EstornarProducaoLoteForm
+                              movimentoId={
+                                movimento.mvo_id
+                              }
+                              tipo={
+                                tipoMovimentoOvoLabel[
+                                  movimento
+                                    .mvo_tipo_movimento
+                                ]
+                              }
+                              quantidade={
+                                movimento.mvo_quantidade
+                              }
+                              data={formatarDataCalendario(
+                                movimento.mvo_data_movimento,
+                              )}
+                            />
+                          ) : (
+                            <span className="text-sm text-gray-400">
+                              —
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="divide-y divide-gray-200 lg:hidden">
+                {producao.map((movimento) => (
+                  <article
+                    key={movimento.mvo_id}
+                    className={`p-5 ${
+                      movimento.mvo_status_registro ===
+                      "ESTORNADO"
+                        ? "bg-gray-50/70"
+                        : "bg-white"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <TipoMovimentoOvoBadge
+                        tipo={
+                          movimento.mvo_tipo_movimento
+                        }
+                      />
+
+                      <StatusBaixaBadge
+                        status={
+                          movimento.mvo_status_registro
+                        }
+                      />
+                    </div>
+
+                    <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Data
+                        </dt>
+
+                        <dd className="mt-1 text-sm text-gray-900">
+                          {formatarDataCalendario(
+                            movimento.mvo_data_movimento,
+                          )}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Quantidade
+                        </dt>
+
+                        <dd className="mt-1 text-sm font-medium text-gray-900">
+                          {formatarOvos(
+                            movimento.mvo_quantidade,
+                          )}
+                        </dd>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Registrado por
+                        </dt>
+
+                        <dd className="mt-1 text-sm text-gray-900">
+                          {
+                            movimento
+                              .usuario_movimento_ovo_usu_idTousuario
+                              .usu_nome
+                          }
+                        </dd>
+
+                        <dd className="mt-1 text-xs text-gray-500">
+                          {formatarDataHora(
+                            movimento.created_at,
+                          )}
+                        </dd>
+                      </div>
+
+                      {movimento.mvo_status_registro ===
+                      "ESTORNADO" ? (
+                        <div className="sm:col-span-2">
+                          <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Informações do estorno
+                          </dt>
+
+                          <dd className="mt-1 space-y-1 text-sm text-gray-700">
+                            {movimento
+                              .usuario_movimento_ovo_mvo_estornado_porTousuario ? (
+                              <p>
+                                Responsável:{" "}
+                                {
+                                  movimento
+                                    .usuario_movimento_ovo_mvo_estornado_porTousuario
+                                    .usu_nome
+                                }
+                              </p>
+                            ) : null}
+
+                            {movimento.mvo_estornado_em ? (
+                              <p>
+                                Data:{" "}
+                                {formatarDataHora(
+                                  movimento.mvo_estornado_em,
+                                )}
+                              </p>
+                            ) : null}
+
+                            {movimento.mvo_motivo_estorno ? (
+                              <p>
+                                Motivo:{" "}
+                                {
+                                  movimento.mvo_motivo_estorno
+                                }
+                              </p>
+                            ) : null}
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+
+                    {movimento.mvo_status_registro ===
+                      "ATIVO" &&
+                    lote.lta_status === "ATIVO" ? (
+                      <div className="mt-4 flex justify-end border-t border-gray-100 pt-4">
+                        <EstornarProducaoLoteForm
+                          movimentoId={
+                            movimento.mvo_id
+                          }
+                          tipo={
+                            tipoMovimentoOvoLabel[
+                              movimento
+                                .mvo_tipo_movimento
+                            ]
+                          }
+                          quantidade={
+                            movimento.mvo_quantidade
+                          }
+                          data={formatarDataCalendario(
+                            movimento.mvo_data_movimento,
                           )}
                         />
                       </div>

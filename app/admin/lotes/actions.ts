@@ -9,6 +9,8 @@ import { estornarBaixaLote } from "@/application/lotes/estornar-baixa-lote";
 import { finalizarLote } from "@/application/lotes/finalizar-lote";
 import { registrarBaixaLote } from "@/application/lotes/registrar-baixa-lote";
 import type { TipoBaixaLote } from "@/application/lotes/tipo-baixa-lote";
+import { estornarProducaoLote } from "@/application/producao-ovos/estornar-producao-lote";
+import { registrarProducaoLote } from "@/application/producao-ovos/registrar-producao-lote";
 import { auth } from "@/auth";
 
 export type CriarLoteActionState = {
@@ -30,6 +32,16 @@ export type EstornarBaixaLoteActionState = {
 };
 
 export type FinalizarLoteActionState = {
+  erro?: string;
+  sucesso?: boolean;
+};
+
+export type RegistrarProducaoLoteActionState = {
+  erro?: string;
+  sucesso?: boolean;
+};
+
+export type EstornarProducaoLoteActionState = {
   erro?: string;
   sucesso?: boolean;
 };
@@ -328,6 +340,115 @@ export async function finalizarLoteAction(
   revalidatePath("/admin/lotes");
   revalidatePath(
     `/admin/lotes/${loteId}`,
+  );
+
+  return {
+    sucesso: true,
+  };
+}
+
+export async function registrarProducaoLoteAction(
+  _prevState: RegistrarProducaoLoteActionState,
+  formData: FormData,
+): Promise<RegistrarProducaoLoteActionState> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      erro: "Sua sessão expirou. Entre novamente no sistema.",
+    };
+  }
+
+  if (session.user.perfil !== "ADMIN") {
+    return {
+      erro:
+        "Você não possui permissão para registrar produção no lote.",
+    };
+  }
+
+  const loteId = extrairNumero(
+    formData,
+    "loteId",
+  );
+
+  const resultado =
+    await registrarProducaoLote({
+      loteId,
+      usuarioId: Number(
+        session.user.id,
+      ),
+      quantidadeComercial: extrairNumero(
+        formData,
+        "quantidadeComercial",
+      ),
+      quantidadePerda: extrairNumero(
+        formData,
+        "quantidadePerda",
+      ),
+      data: extrairData(
+        formData,
+        "data",
+      ),
+    });
+
+  if (!resultado.sucesso) {
+    return {
+      erro: resultado.mensagem,
+    };
+  }
+
+  revalidatePath("/admin/lotes");
+  revalidatePath(
+    `/admin/lotes/${loteId}`,
+  );
+
+  return {
+    sucesso: true,
+  };
+}
+
+export async function estornarProducaoLoteAction(
+  _prevState: EstornarProducaoLoteActionState,
+  formData: FormData,
+): Promise<EstornarProducaoLoteActionState> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      erro: "Sua sessão expirou. Entre novamente no sistema.",
+    };
+  }
+
+  if (session.user.perfil !== "ADMIN") {
+    return {
+      erro:
+        "Você não possui permissão para estornar produção do lote.",
+    };
+  }
+
+  const resultado =
+    await estornarProducaoLote({
+      movimentoId: extrairNumero(
+        formData,
+        "movimentoId",
+      ),
+      usuarioId: Number(
+        session.user.id,
+      ),
+      motivo: String(
+        formData.get("motivo") ?? "",
+      ),
+    });
+
+  if (!resultado.sucesso) {
+    return {
+      erro: resultado.mensagem,
+    };
+  }
+
+  revalidatePath("/admin/lotes");
+  revalidatePath(
+    `/admin/lotes/${resultado.loteId}`,
   );
 
   return {
