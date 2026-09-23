@@ -735,7 +735,9 @@ export default async function LotePage({
 
                         <td className="px-5 py-4 text-center align-top">
                           {baixa.mor_status_registro ===
-                          "ATIVO" ? (
+                          "ATIVO" &&
+                          lote.lta_status ===
+                            "ATIVO" ? (
                             <EstornarBaixaLoteForm
                               baixaId={baixa.mor_id}
                               tipo={
