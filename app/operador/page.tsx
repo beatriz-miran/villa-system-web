@@ -7,6 +7,7 @@ import {
   QrCode,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth, signOut } from "@/auth";
@@ -97,7 +98,10 @@ export default async function OperadorPage() {
           </h2>
 
           <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <div className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <Link
+              href="/operador/producao"
+              className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition active:scale-[0.98] active:bg-gray-50"
+            >
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F4B324]/15 text-[#B77C00]">
                 <Egg size={23} />
               </div>
@@ -111,7 +115,7 @@ export default async function OperadorPage() {
                   Registrar ovos
                 </p>
               </div>
-            </div>
+            </Link>
 
             <div className="flex min-h-[125px] flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
