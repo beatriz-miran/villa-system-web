@@ -124,7 +124,29 @@ const metasHyLineBrownSistemaAlternativo = [
 const descricaoHyLineBrown =
   "Poedeira comercial de ovos marrons para sistemas alternativos, livres ou caipiras. Metas baseadas no guia internacional Hy-Line de maio de 2026.";
 
+const categoriasInsumo = [
+  { cti_descricao: "Ração", cti_tipo: "RACAO" as const },
+  { cti_descricao: "Medicamento", cti_tipo: "MEDICAMENTO" as const },
+  { cti_descricao: "Vacina", cti_tipo: "VACINA" as const },
+  { cti_descricao: "Embalagem", cti_tipo: "EMBALAGEM" as const },
+  { cti_descricao: "Outros", cti_tipo: "OUTROS" as const },
+];
+
 async function executarSeed() {
+  for (const categoriaInsumo of categoriasInsumo) {
+    await prisma.categoria_insumo.upsert({
+      where: {
+        cti_descricao: categoriaInsumo.cti_descricao,
+      },
+      update: {
+        cti_tipo: categoriaInsumo.cti_tipo,
+      },
+      create: categoriaInsumo,
+    });
+  }
+
+  console.log("Categorias de insumo cadastradas com sucesso.");
+
   for (const tipoOvo of tiposOvo) {
     await prisma.tipo_ovo.upsert({
       where: {
