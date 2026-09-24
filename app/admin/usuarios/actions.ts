@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { alterarStatusUsuario } from "@/application/usuarios/alterar-status-usuario";
 import { atualizarUsuario } from "@/application/usuarios/atualizar-usuario";
 import { criarUsuario } from "@/application/usuarios/criar-usuario";
+import { auth } from "@/auth";
 
 export type CriarUsuarioActionState = {
   erro?: string;
@@ -22,7 +22,7 @@ export type AlterarStatusUsuarioActionState = {
 
 export async function criarUsuarioAction(
   _prevState: CriarUsuarioActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CriarUsuarioActionState> {
   const session = await auth();
 
@@ -39,12 +39,18 @@ export async function criarUsuarioAction(
   }
 
   const resultado = await criarUsuario({
-    nome: String(formData.get("nome") ?? ""),
-    email: String(formData.get("email") ?? ""),
-    perfil: String(formData.get("perfil") ?? "") as
-      | "ADMIN"
-      | "OPERADOR",
-    senha: String(formData.get("senha") ?? ""),
+    nome: String(
+      formData.get("nome") ?? "",
+    ),
+    email: String(
+      formData.get("email") ?? "",
+    ),
+    perfil: String(
+      formData.get("perfil") ?? "",
+    ) as "ADMIN" | "OPERADOR",
+    senha: String(
+      formData.get("senha") ?? "",
+    ),
   });
 
   if (!resultado.sucesso) {
@@ -59,7 +65,7 @@ export async function criarUsuarioAction(
 
 export async function atualizarUsuarioAction(
   _prevState: AtualizarUsuarioActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AtualizarUsuarioActionState> {
   const session = await auth();
 
@@ -75,15 +81,31 @@ export async function atualizarUsuarioAction(
     };
   }
 
-  const id = Number(formData.get("id"));
+  const usuarioLogadoId = Number(
+    session.user.id,
+  );
+
+  if (
+    !Number.isInteger(usuarioLogadoId) ||
+    usuarioLogadoId <= 0
+  ) {
+    return {
+      erro: "Não foi possível identificar o usuário autenticado.",
+    };
+  }
 
   const resultado = await atualizarUsuario({
-    id,
-    nome: String(formData.get("nome") ?? ""),
-    email: String(formData.get("email") ?? ""),
-    perfil: String(formData.get("perfil") ?? "") as
-      | "ADMIN"
-      | "OPERADOR",
+    id: Number(formData.get("id")),
+    usuarioLogadoId,
+    nome: String(
+      formData.get("nome") ?? "",
+    ),
+    email: String(
+      formData.get("email") ?? "",
+    ),
+    perfil: String(
+      formData.get("perfil") ?? "",
+    ) as "ADMIN" | "OPERADOR",
   });
 
   if (!resultado.sucesso) {
@@ -98,7 +120,7 @@ export async function atualizarUsuarioAction(
 
 export async function alterarStatusUsuarioAction(
   _prevState: AlterarStatusUsuarioActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AlterarStatusUsuarioActionState> {
   const session = await auth();
 
@@ -114,21 +136,27 @@ export async function alterarStatusUsuarioAction(
     };
   }
 
-  const usuarioLogadoId = Number(session.user.id);
+  const usuarioLogadoId = Number(
+    session.user.id,
+  );
 
-  if (!Number.isInteger(usuarioLogadoId) || usuarioLogadoId <= 0) {
+  if (
+    !Number.isInteger(usuarioLogadoId) ||
+    usuarioLogadoId <= 0
+  ) {
     return {
       erro: "Não foi possível identificar o usuário autenticado.",
     };
   }
 
-  const resultado = await alterarStatusUsuario({
-    id: Number(formData.get("id")),
-    status: String(formData.get("status") ?? "") as
-      | "ATIVO"
-      | "INATIVO",
-    usuarioLogadoId,
-  });
+  const resultado =
+    await alterarStatusUsuario({
+      id: Number(formData.get("id")),
+      status: String(
+        formData.get("status") ?? "",
+      ) as "ATIVO" | "INATIVO",
+      usuarioLogadoId,
+    });
 
   if (!resultado.sucesso) {
     return {

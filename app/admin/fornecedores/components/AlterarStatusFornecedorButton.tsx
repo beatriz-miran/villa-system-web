@@ -4,12 +4,14 @@ import { useActionState, useEffect, useState } from "react";
 
 import {
   alterarStatusFornecedorAction,
-  AlterarStatusFornecedorActionState,
+  type AlterarStatusFornecedorActionState,
 } from "@/app/admin/fornecedores/actions";
+
+type StatusFornecedor = "ATIVO" | "INATIVO";
 
 type AlterarStatusFornecedorButtonProps = {
   fornecedorId: number;
-  status: "ATIVO" | "INATIVO";
+  status: StatusFornecedor;
 };
 
 const estadoInicial: AlterarStatusFornecedorActionState = {};
@@ -20,23 +22,23 @@ export default function AlterarStatusFornecedorButton({
 }: AlterarStatusFornecedorButtonProps) {
   const [state, formAction, pendente] = useActionState(
     alterarStatusFornecedorAction,
-    estadoInicial
+    estadoInicial,
   );
 
-  const [erroVisivel, setErroVisivel] = useState<string | null>(
-    null
-  );
+  const [erroOculto, setErroOculto] = useState(false);
 
   const fornecedorAtivo = status === "ATIVO";
-  const novoStatus = fornecedorAtivo ? "INATIVO" : "ATIVO";
 
-  useEffect(() => {
-    if (state.erro) {
-      setErroVisivel(state.erro);
-    } else {
-      setErroVisivel(null);
-    }
-  }, [state]);
+  const novoStatus: StatusFornecedor = fornecedorAtivo
+    ? "INATIVO"
+    : "ATIVO";
+
+  const acao = fornecedorAtivo ? "desativar" : "ativar";
+
+  const erroVisivel =
+    !pendente && !erroOculto
+      ? state.erro ?? null
+      : null;
 
   useEffect(() => {
     if (!erroVisivel) {
@@ -44,7 +46,7 @@ export default function AlterarStatusFornecedorButton({
     }
 
     function fecharErro() {
-      setErroVisivel(null);
+      setErroOculto(true);
     }
 
     document.addEventListener("pointerdown", fecharErro);
@@ -54,9 +56,28 @@ export default function AlterarStatusFornecedorButton({
     };
   }, [erroVisivel]);
 
+  function confirmarAlteracao(
+    evento: React.FormEvent<HTMLFormElement>,
+  ) {
+    const confirmou = window.confirm(
+      `Confirma ${acao} este fornecedor?`,
+    );
+
+    if (!confirmou) {
+      evento.preventDefault();
+      return;
+    }
+
+    setErroOculto(false);
+  }
+
   return (
     <>
-      <form action={formAction}>
+      <form
+        action={formAction}
+        onSubmit={confirmarAlteracao}
+        className="shrink-0"
+      >
         <input
           type="hidden"
           name="id"
@@ -72,10 +93,10 @@ export default function AlterarStatusFornecedorButton({
         <button
           type="submit"
           disabled={pendente}
-          className={`text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`w-24 rounded-md border px-3 py-2 text-center text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
             fornecedorAtivo
-              ? "text-red-600 hover:underline"
-              : "text-[#1B3B32] hover:underline"
+              ? "border-red-200 bg-white text-red-600 hover:bg-red-50"
+              : "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
           }`}
         >
           {pendente
@@ -86,7 +107,7 @@ export default function AlterarStatusFornecedorButton({
         </button>
       </form>
 
-      {erroVisivel && (
+      {erroVisivel ? (
         <div
           role="alert"
           aria-live="polite"
@@ -112,7 +133,7 @@ export default function AlterarStatusFornecedorButton({
 
             <button
               type="button"
-              onClick={() => setErroVisivel(null)}
+              onClick={() => setErroOculto(true)}
               className="shrink-0 rounded-md px-2 py-1 text-lg leading-none text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
               aria-label="Fechar aviso"
             >
@@ -120,7 +141,7 @@ export default function AlterarStatusFornecedorButton({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

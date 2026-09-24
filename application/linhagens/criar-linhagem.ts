@@ -1,12 +1,20 @@
 import { z } from "zod";
 
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
+import {
+  buscarTipoOvoPorId,
+} from "@/infrastructure/repositories/tipo-ovo-repository";
 import {
   buscarLinhagemPorNome,
   criarLinhagem as criarLinhagemRepository,
 } from "@/infrastructure/repositories/linhagem-repository";
-import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
-import { buscarTipoOvoPorId } from "@/infrastructure/repositories/tipo-ovo-repository";
 
+import {
+  cartilhasLinhagemSchema,
+  existemUrlsCartilhasDuplicadas,
+} from "./cartilha-linhagem-schema";
+import { densidadeMaximaLinhagemSchema } from "./densidade-linhagem-schema";
+import { imagemLinhagemSchema } from "./imagem-linhagem-schema";
 import {
   existemSemanasDuplicadas,
   metaLinhagemSchema,
@@ -25,15 +33,27 @@ const criarLinhagemSchema = z.object({
     .max(255, "A descrição deve possuir no máximo 255 caracteres.")
     .optional(),
 
+  densidadeMaximaAvesM2: densidadeMaximaLinhagemSchema,
+
+  imagemGalinhaUrl: imagemLinhagemSchema,
+
+  imagemOvoUrl: imagemLinhagemSchema,
+
   tipoOvoId: z
-    .number({ error: "Selecione um tipo de ovo válido." })
+    .number({
+      error: "Selecione um tipo de ovo válido.",
+    })
     .int()
     .positive("Selecione um tipo de ovo válido."),
 
   metas: z.array(metaLinhagemSchema).default([]),
+
+  cartilhas: cartilhasLinhagemSchema.default([]),
 });
 
-export type CriarLinhagemInput = z.infer<typeof criarLinhagemSchema>;
+export type CriarLinhagemInput = z.infer<
+  typeof criarLinhagemSchema
+>;
 
 export type CriarLinhagemResultado =
   | {
@@ -45,7 +65,7 @@ export type CriarLinhagemResultado =
     };
 
 export async function criarLinhagem(
-  dados: CriarLinhagemInput
+  dados: CriarLinhagemInput,
 ): Promise<CriarLinhagemResultado> {
   const validacao = criarLinhagemSchema.safeParse(dados);
 
@@ -61,14 +81,26 @@ export async function criarLinhagem(
   const {
     nome,
     descricao,
+    densidadeMaximaAvesM2,
+    imagemGalinhaUrl,
+    imagemOvoUrl,
     tipoOvoId,
     metas,
+    cartilhas,
   } = validacao.data;
 
   if (existemSemanasDuplicadas(metas)) {
     return {
       sucesso: false,
       mensagem: "Não é possível repetir a mesma semana nas metas.",
+    };
+  }
+
+  if (existemUrlsCartilhasDuplicadas(cartilhas)) {
+    return {
+      sucesso: false,
+      mensagem:
+        "Não é possível cadastrar a mesma URL de cartilha duas vezes.",
     };
   }
 
@@ -95,8 +127,18 @@ export async function criarLinhagem(
     await criarLinhagemRepository({
       nome,
       descricao: descricao || null,
+      densidadeMaximaAvesM2,
+      imagemGalinhaUrl: imagemGalinhaUrl || null,
+      imagemOvoUrl: imagemOvoUrl || null,
       tipoOvoId,
       metas,
+      cartilhas: cartilhas.map((cartilha) => ({
+        titulo: cartilha.titulo,
+        fonte: cartilha.fonte,
+        sistema: cartilha.sistema,
+        edicao: cartilha.edicao || null,
+        url: cartilha.url,
+      })),
     });
 
     return {
@@ -106,7 +148,8 @@ export async function criarLinhagem(
     if (erroPrismaTemCodigo(error, "P2002")) {
       return {
         sucesso: false,
-        mensagem: "Já existe uma linhagem cadastrada com este nome.",
+        mensagem:
+          "Já existe uma linhagem com este nome ou uma cartilha repetida para esta linhagem.",
       };
     }
 

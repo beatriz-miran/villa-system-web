@@ -9,9 +9,9 @@ type AtualizarGalpaoDados = CriarGalpaoDados;
 
 type GalpaoStatus =
   | "ATIVO"
-  | "VAZIO_SANITARIO"
+  | "DESATIVADO"
   | "MANUTENCAO"
-  | "DESATIVADO";
+  | "VAZIO_SANITARIO";
 
 const selectGalpao = {
   gal_id: true,
@@ -55,9 +55,12 @@ export async function buscarGalpaoPorId(id: number) {
 }
 
 export async function buscarGalpaoPorNome(nome: string) {
-  return prisma.galpao.findUnique({
+  return prisma.galpao.findFirst({
     where: {
-      gal_nome: nome,
+      gal_nome: {
+        equals: nome,
+        mode: "insensitive",
+      },
     },
     select: {
       gal_id: true,
@@ -87,6 +90,7 @@ export async function atualizarGalpao(
     data: {
       gal_nome: dados.nome,
       gal_area_m2: dados.areaM2,
+      updated_at: new Date(),
     },
     select: selectGalpao,
   });
@@ -102,16 +106,23 @@ export async function atualizarStatusGalpao(
     },
     data: {
       gal_status: status,
+      updated_at: new Date(),
     },
     select: selectGalpao,
   });
 }
 
-export async function existeLoteAtivoNoGalpao(id: number) {
+export async function existeLoteAtivoNoGalpao(
+  id: number,
+  ignorarLoteId?: number
+) {
   const lote = await prisma.lote_aves.findFirst({
     where: {
       gal_id: id,
       lta_status: "ATIVO",
+      ...(ignorarLoteId
+        ? { lta_id: { not: ignorarLoteId } }
+        : {}),
     },
     select: {
       lta_id: true,

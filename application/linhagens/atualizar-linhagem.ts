@@ -9,6 +9,12 @@ import {
 import { buscarTipoOvoPorId } from "@/infrastructure/repositories/tipo-ovo-repository";
 
 import {
+  cartilhasLinhagemSchema,
+  existemUrlsCartilhasDuplicadas,
+} from "./cartilha-linhagem-schema";
+import { densidadeMaximaLinhagemSchema } from "./densidade-linhagem-schema";
+import { imagemLinhagemSchema } from "./imagem-linhagem-schema";
+import {
   existemSemanasDuplicadas,
   metaLinhagemSchema,
 } from "./meta-linhagem-schema";
@@ -31,12 +37,22 @@ const atualizarLinhagemSchema = z.object({
     .max(255, "A descrição deve possuir no máximo 255 caracteres.")
     .optional(),
 
+  densidadeMaximaAvesM2: densidadeMaximaLinhagemSchema,
+
+  imagemGalinhaUrl: imagemLinhagemSchema,
+
+  imagemOvoUrl: imagemLinhagemSchema,
+
   tipoOvoId: z
-    .number({ error: "Selecione um tipo de ovo válido." })
+    .number({
+      error: "Selecione um tipo de ovo válido.",
+    })
     .int()
     .positive("Selecione um tipo de ovo válido."),
 
   metas: z.array(metaLinhagemSchema).default([]),
+
+  cartilhas: cartilhasLinhagemSchema.default([]),
 });
 
 export type AtualizarLinhagemInput = z.infer<
@@ -53,7 +69,7 @@ export type AtualizarLinhagemResultado =
     };
 
 export async function atualizarLinhagem(
-  dados: AtualizarLinhagemInput
+  dados: AtualizarLinhagemInput,
 ): Promise<AtualizarLinhagemResultado> {
   const validacao = atualizarLinhagemSchema.safeParse(dados);
 
@@ -70,14 +86,26 @@ export async function atualizarLinhagem(
     id,
     nome,
     descricao,
+    densidadeMaximaAvesM2,
+    imagemGalinhaUrl,
+    imagemOvoUrl,
     tipoOvoId,
     metas,
+    cartilhas,
   } = validacao.data;
 
   if (existemSemanasDuplicadas(metas)) {
     return {
       sucesso: false,
       mensagem: "Não é possível repetir a mesma semana nas metas.",
+    };
+  }
+
+  if (existemUrlsCartilhasDuplicadas(cartilhas)) {
+    return {
+      sucesso: false,
+      mensagem:
+        "Não é possível cadastrar a mesma URL de cartilha duas vezes.",
     };
   }
 
@@ -116,8 +144,18 @@ export async function atualizarLinhagem(
     await atualizarLinhagemRepository(id, {
       nome,
       descricao: descricao || null,
+      densidadeMaximaAvesM2,
+      imagemGalinhaUrl: imagemGalinhaUrl || null,
+      imagemOvoUrl: imagemOvoUrl || null,
       tipoOvoId,
       metas,
+      cartilhas: cartilhas.map((cartilha) => ({
+        titulo: cartilha.titulo,
+        fonte: cartilha.fonte,
+        sistema: cartilha.sistema,
+        edicao: cartilha.edicao || null,
+        url: cartilha.url,
+      })),
     });
 
     return {
@@ -127,7 +165,8 @@ export async function atualizarLinhagem(
     if (erroPrismaTemCodigo(error, "P2002")) {
       return {
         sucesso: false,
-        mensagem: "Já existe outra linhagem cadastrada com este nome.",
+        mensagem:
+          "Já existe uma linhagem com este nome ou uma cartilha repetida para esta linhagem.",
       };
     }
 

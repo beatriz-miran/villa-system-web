@@ -81,10 +81,17 @@ export default async function UsuariosPage() {
                     </p>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-4 border-t border-gray-100 pt-4">
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4">
+                    <Link
+                      href={`/admin/usuarios/${usuario.usu_id}`}
+                      className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
+                    >
+                      Visualizar
+                    </Link>
+
                     <Link
                       href={`/admin/usuarios/${usuario.usu_id}/editar`}
-                      className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                      className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                     >
                       Editar
                     </Link>
@@ -120,7 +127,7 @@ export default async function UsuariosPage() {
                         Status
                       </th>
 
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="w-[22rem] px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Ações
                       </th>
                     </tr>
@@ -155,11 +162,18 @@ export default async function UsuariosPage() {
                           </span>
                         </td>
 
-                        <td className="px-5 py-4">
-                          <div className="flex items-center justify-end gap-4">
+                        <td className="w-[22rem] px-5 py-4">
+                          <div className="flex items-center justify-center gap-3">
+                            <Link
+                              href={`/admin/usuarios/${usuario.usu_id}`}
+                              className="min-w-24 rounded-md border border-[#1B3B32] bg-white px-3 py-2 text-center text-sm font-medium text-[#1B3B32] transition hover:bg-[#EAF4EF]"
+                            >
+                              Visualizar
+                            </Link>
+
                             <Link
                               href={`/admin/usuarios/${usuario.usu_id}/editar`}
-                              className="text-sm font-medium text-[#1B3B32] transition hover:underline"
+                              className="min-w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                             >
                               Editar
                             </Link>

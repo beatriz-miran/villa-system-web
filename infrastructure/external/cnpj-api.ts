@@ -1,3 +1,19 @@
+import { z } from "zod";
+
+const TEMPO_LIMITE_CONSULTA_MS = 10_000;
+
+const respostaBrasilApiSchema = z.object({
+  razao_social: z.string().trim().min(1),
+  nome_fantasia: z.string().nullish(),
+  ddd_telefone_1: z.string().nullish(),
+  cep: z.string().nullish(),
+  logradouro: z.string().nullish(),
+  numero: z.string().nullish(),
+  bairro: z.string().nullish(),
+  municipio: z.string().nullish(),
+  uf: z.string().nullish(),
+});
+
 export type DadosCnpjExterno = {
   razaoSocial: string;
   nomeFantasia: string | null;
@@ -14,16 +30,14 @@ export async function consultarCnpj(
   cnpj: string
 ): Promise<DadosCnpjExterno | null> {
   const resposta = await fetch(
-    `https://brasilapi.com.br/api/cnpj/v1/${cnpj}`,
+    `https://brasilapi.com.br/api/cnpj/v1/${encodeURIComponent(cnpj)}`,
     {
       cache: "no-store",
       headers: {
-        // A Cloudflare (que protege a BrasilAPI) retorna 403 para o
-        // User-Agent padrão do fetch em ambiente Node/servidor.
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
         Accept: "application/json",
+        "User-Agent": "VillaSystem/1.0",
       },
+      signal: AbortSignal.timeout(TEMPO_LIMITE_CONSULTA_MS),
     }
   );
 
@@ -37,10 +51,19 @@ export async function consultarCnpj(
     );
   }
 
-  const dados = await resposta.json();
+  const corpoResposta: unknown = await resposta.json();
+  const validacao = respostaBrasilApiSchema.safeParse(corpoResposta);
+
+  if (!validacao.success) {
+    throw new Error(
+      "A BrasilAPI retornou dados de CNPJ em um formato inesperado."
+    );
+  }
+
+  const dados = validacao.data;
 
   return {
-    razaoSocial: dados.razao_social ?? "",
+    razaoSocial: dados.razao_social,
     nomeFantasia: dados.nome_fantasia || null,
     telefonePrincipal: dados.ddd_telefone_1 || null,
     cep: dados.cep || null,

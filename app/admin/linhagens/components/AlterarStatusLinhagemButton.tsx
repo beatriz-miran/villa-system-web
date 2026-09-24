@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 
 import {
   alterarStatusLinhagemAction,
-  AlterarStatusLinhagemActionState,
+  type AlterarStatusLinhagemActionState,
 } from "@/app/admin/linhagens/actions";
 
 type AlterarStatusLinhagemButtonProps = {
@@ -20,7 +20,7 @@ export default function AlterarStatusLinhagemButton({
 }: AlterarStatusLinhagemButtonProps) {
   const [state, formAction, pendente] = useActionState(
     alterarStatusLinhagemAction,
-    estadoInicial
+    estadoInicial,
   );
 
   const [erroOculto, setErroOculto] = useState(false);
@@ -29,7 +29,9 @@ export default function AlterarStatusLinhagemButton({
   const novoStatus = linhagemAtiva ? "INATIVO" : "ATIVO";
 
   const erroVisivel =
-    !pendente && !erroOculto ? state.erro ?? null : null;
+    !pendente && !erroOculto
+      ? state.erro ?? null
+      : null;
 
   useEffect(() => {
     if (!erroVisivel) {
@@ -51,30 +53,40 @@ export default function AlterarStatusLinhagemButton({
     <>
       <form
         action={formAction}
+        className="shrink-0"
         onSubmit={(event) => {
-          setErroOculto(false);
-
           if (
             linhagemAtiva &&
             !window.confirm(
-              "Tem certeza que deseja desativar esta linhagem?"
+              "Tem certeza que deseja desativar esta linhagem?",
             )
           ) {
             event.preventDefault();
+            return;
           }
+
+          setErroOculto(false);
         }}
       >
-        <input type="hidden" name="id" value={linhagemId} />
+        <input
+          type="hidden"
+          name="id"
+          value={linhagemId}
+        />
 
-        <input type="hidden" name="status" value={novoStatus} />
+        <input
+          type="hidden"
+          name="status"
+          value={novoStatus}
+        />
 
         <button
           type="submit"
           disabled={pendente}
-          className={`text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`w-24 rounded-md border px-3 py-2 text-center text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
             linhagemAtiva
-              ? "text-red-600 hover:underline"
-              : "text-[#1B3B32] hover:underline"
+              ? "border-red-200 bg-white text-red-600 hover:bg-red-50"
+              : "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
           }`}
         >
           {pendente
@@ -85,7 +97,7 @@ export default function AlterarStatusLinhagemButton({
         </button>
       </form>
 
-      {erroVisivel && (
+      {erroVisivel ? (
         <div
           role="alert"
           aria-live="polite"
@@ -119,7 +131,7 @@ export default function AlterarStatusLinhagemButton({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   atualizarStatusGalpao,
   buscarGalpaoPorId,
@@ -45,36 +46,54 @@ export async function alterarStatusGalpao(
 
   const { id, status } = validacao.data;
 
-  const galpao = await buscarGalpaoPorId(id);
+  try {
+    const galpao = await buscarGalpaoPorId(id);
 
-  if (!galpao) {
-    return {
-      sucesso: false,
-      mensagem: "Galpão não encontrado.",
-    };
-  }
+    if (!galpao) {
+      return {
+        sucesso: false,
+        mensagem: "Galpão não encontrado.",
+      };
+    }
 
-  if (galpao.gal_status === status) {
+    if (galpao.gal_status === status) {
+      return {
+        sucesso: true,
+      };
+    }
+
+    if (status !== "ATIVO") {
+      const temLoteAtivo = await existeLoteAtivoNoGalpao(id);
+
+      if (temLoteAtivo) {
+        return {
+          sucesso: false,
+          mensagem:
+            "Não é possível alterar o galpão para manutenção, vazio sanitário ou desativado enquanto existir um lote ativo nele.",
+        };
+      }
+    }
+
+    await atualizarStatusGalpao(id, status);
+
     return {
       sucesso: true,
     };
-  }
-
-  if (status === "MANUTENCAO" || status === "DESATIVADO") {
-    const temLoteAtivo = await existeLoteAtivoNoGalpao(id);
-
-    if (temLoteAtivo) {
+  } catch (erro) {
+    if (erroPrismaTemCodigo(erro, "P2025")) {
       return {
         sucesso: false,
         mensagem:
-          "Não é possível colocar em manutenção ou desativar um galpão com lote ativo.",
+          "O galpão não foi encontrado ou foi alterado por outro usuário.",
       };
     }
+
+    console.error("Falha ao alterar o status do galpão:", erro);
+
+    return {
+      sucesso: false,
+      mensagem:
+        "Não foi possível alterar o status do galpão no momento. Tente novamente.",
+    };
   }
-
-  await atualizarStatusGalpao(id, status);
-
-  return {
-    sucesso: true,
-  };
 }

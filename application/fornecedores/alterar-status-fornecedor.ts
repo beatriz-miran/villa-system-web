@@ -1,22 +1,19 @@
 import { z } from "zod";
 
+import { erroPrismaTemCodigo } from "@/infrastructure/database/identificar-erro-prisma";
 import {
   atualizarStatusFornecedor,
   buscarFornecedorPorId,
 } from "@/infrastructure/repositories/fornecedor-repository";
 
-const alterarStatusFornecedorSchema = z.object({
-  id: z
-    .number()
-    .int()
-    .positive("Fornecedor inválido."),
+const statusFornecedorValores = ["ATIVO", "INATIVO"] as const;
 
-  status: z.enum(
-    ["ATIVO", "INATIVO"],
-    {
-      error: "Status inválido.",
-    }
-  ),
+const alterarStatusFornecedorSchema = z.object({
+  id: z.number().int().positive("Fornecedor inválido."),
+
+  status: z.enum(statusFornecedorValores, {
+    error: "Status inválido.",
+  }),
 });
 
 export type AlterarStatusFornecedorInput = z.infer<
@@ -48,24 +45,42 @@ export async function alterarStatusFornecedor(
 
   const { id, status } = validacao.data;
 
-  const fornecedor = await buscarFornecedorPorId(id);
+  try {
+    const fornecedor = await buscarFornecedorPorId(id);
 
-  if (!fornecedor) {
-    return {
-      sucesso: false,
-      mensagem: "Fornecedor não encontrado.",
-    };
-  }
+    if (!fornecedor) {
+      return {
+        sucesso: false,
+        mensagem: "Fornecedor não encontrado.",
+      };
+    }
 
-  if (fornecedor.for_status === status) {
+    if (fornecedor.for_status === status) {
+      return {
+        sucesso: true,
+      };
+    }
+
+    await atualizarStatusFornecedor(id, status);
+
     return {
       sucesso: true,
     };
+  } catch (erro) {
+    if (erroPrismaTemCodigo(erro, "P2025")) {
+      return {
+        sucesso: false,
+        mensagem:
+          "O fornecedor não foi encontrado ou foi alterado por outro usuário.",
+      };
+    }
+
+    console.error("Falha ao alterar o status do fornecedor:", erro);
+
+    return {
+      sucesso: false,
+      mensagem:
+        "Não foi possível alterar o status do fornecedor no momento. Tente novamente.",
+    };
   }
-
-  await atualizarStatusFornecedor(id, status);
-
-  return {
-    sucesso: true,
-  };
 }
