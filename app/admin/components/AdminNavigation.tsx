@@ -36,10 +36,13 @@ const itensComRota = [
     nome: "Produção de Ovos",
     href: "/admin/producao",
   },
+  {
+    nome: "Estoque de Insumos",
+    href: "/admin/insumos",
+  },
 ];
 
 const itensFuturos = [
-  "Insumos & Estoque",
   "Financeiro",
   "Relatórios",
 ];
